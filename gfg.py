@@ -27,11 +27,6 @@ class Node:
     def __eq__(self, other):
         return isinstance(other, Node) and self.label == other.label
 
-def add_edge(src, dest, label):
-    src.outgoing_edges[dest.label] = label
-    dest.incoming_edges[src.label] = label
-    # print(f"\t\t\tcreating edge from {src.long_name} to {dest.long_name} with LABEL: {label}")
-
 class GFG:
     def __init__(self, lexer):
         self.nodes = {}
@@ -48,126 +43,134 @@ class GFG:
         # simply used for debugging to visualize the gfg
         self.graph = pydot.Dot("my_graph", graph_type="digraph", bgcolor="yellow")
 
+    def add_node(self, label, long_name, type):
+        self.nodes[label] = Node(label, long_name, type)
+        # add node to pydot graph for visualization/debugging only
+        self.graph.add_node(pydot.Node(long_name, shape="circle"))
+        return self.nodes[label]
+    
+    # create the start and end nodes for a given production, curr_label is the next available
+    # int label that can be used to represent a node
+    def create_start_end_nodes_for_prod(self, prod_name, curr_label):
+        self.add_node(curr_label, f"•{prod_name}", "start")
+        self.add_node(curr_label + 1, f"{prod_name}•", "end")
+
+        # update maps to keep track of relationship between production names and nodes
+        self.map_prod_name_to_start[prod_name] = curr_label
+        self.map_start_to_end[curr_label] = curr_label + 1
+        self.map_end_to_start[curr_label + 1] = curr_label
+        return curr_label + 2
+
+    # adds a direction edge from src to dest where the label is the terminal that must be consumed
+    # to move from src to dest in the gfg (often the empty string)
+    def add_edge(self, src, dest, label):
+        src.outgoing_edges[dest.label] = label
+        dest.incoming_edges[src.label] = label
+
+        # optional edges in pydot for gfs visualization, scan edges are black, 
+        # epsilon edges are red
+        color = "red" if label == "" else "black"
+        self.graph.add_edge(pydot.Edge(src.long_name, dest.long_name, label=label, color=color))
+        # print(f"\t\t\tcreating edge from {src.long_name} to {dest.long_name} with LABEL: {label}")
+
     # productions is a map string : list(list(str))
     # value is list of possible productions for a given production name
     # each production is a list of token names or production names
     def build_gfg(self, productions, start_producition="S"):
-        # production : <start node label, end node label>
-
         # each node in the graph is assigned an integer label
         curr_label = 0
 
         # create the start and end node for the start producition first
         # ensures that the start node for the gfg is node 0
         # ensures that the end node for the gfg is node 1
-        self.nodes[curr_label] = Node(curr_label, f"•{start_producition}", "start")
-        self.nodes[curr_label + 1] = Node(curr_label + 1, f"{start_producition}•", "end")
-
-        self.map_prod_name_to_start[start_producition] = curr_label
-        self.map_start_to_end[curr_label] = curr_label + 1
-        self.map_end_to_start[curr_label + 1] = curr_label
-        curr_label += 2
+        curr_label = self.create_start_end_nodes_for_prod(start_producition, curr_label)
 
         # create start and end node for every other production
         for prod_name in productions:
             if prod_name is not start_producition:
-                self.nodes[curr_label] = Node(curr_label, f"•{prod_name}", "start")
-                self.graph.add_node(pydot.Node(f"•{prod_name}", shape="circle"))
-
-                self.nodes[curr_label + 1] = Node(curr_label + 1, f"{prod_name}•", "end")
-                self.graph.add_node(pydot.Node(f"{prod_name}•", shape="circle"))
-
-                self.map_prod_name_to_start[prod_name] = curr_label
-                self.map_start_to_end[curr_label] = curr_label + 1
-                self.map_end_to_start[curr_label + 1] = curr_label
-                curr_label += 2
+                curr_label = self.create_start_end_nodes_for_prod(prod_name, curr_label)
 
         # for each production create necessary nodes
         for prod_name, prods in productions.items():
             for prod_rhs in prods:
                 # print(f"\tCreating production: {prod_name}→{prod_rhs}")
 
-                # previous node in the production
+                # previous node in the production (initially the start node of that production)
                 prev_node = self.nodes[self.map_prod_name_to_start[prod_name]]
-                # set if previous node as a call node
+                # set if previous node is a call node
                 end_node = None 
                 edge_label = ""
                 prefix_label = f"{prod_name}→"
                 is_entry = True
 
                 for term in prod_rhs:
-                    new_node = Node(curr_label, f"[{prefix_label}•{term}]", "production")
+                    new_node = self.add_node(curr_label, f"[{prefix_label}•{term}]", "production")
+                    curr_label += 1
                     new_node.is_entry = is_entry
                     is_entry = False
                     if prev_node.is_call:
+                        # if previous node is a call node to a production then this node is 
+                        # the return node from the production
+                        # Ex: prev_node: A→a•B, then new_node is A→aB•
                         new_node.is_return = True
                         self.map_call_to_return[prev_node.label] = new_node.label
                         self.map_return_to_call[new_node.label] = prev_node.label
 
-                    self.graph.add_node(pydot.Node(f"[{prefix_label}•{term}]", shape="circle"))
-                    self.nodes[curr_label] = new_node
-                    curr_label += 1
-
-                    # add edge from prev_node to new_node with appropriate label
+                    # if previous node is a call node, Ex: prev_node: A→a•B then incoming edge to
+                    # new node should be from the end node of the called production, in this case B•
+                    # this node was stored in end_node during previous iteration
+                    # otherwise if previous node is not a call node, then just set incoming edge
+                    # from prev_node with the set edge label
                     src_node = end_node if prev_node.is_call else prev_node
-                    add_edge(src_node, new_node, edge_label)
-                    color = "red" if edge_label == "" else "black"
-                    self.graph.add_edge(pydot.Edge(src_node.long_name, new_node.long_name, label=edge_label, color=color))
+                    self.add_edge(src_node, new_node, edge_label)
 
                     if term in self.lexer.tokens:
-                        # print(f"\t\t{term} is a terminal")
+                        # term is a terminal, next edge should be a scan edge
                         new_node.is_scan = True
                         edge_label = f"{term}"
-                        prev_node = new_node
                         end_node = None
                     elif term in productions:
-                        # print(f"\t\t{term} is a production")
+                        # term is a production, thus new_node is a call node
                         new_node.is_call = True
-                        start = self.map_prod_name_to_start[term]
-                        end = self.map_start_to_end[start]
+                        # get start and end node of called production
+                        called_prod_start = self.map_prod_name_to_start[term]
+                        called_prod_end = self.map_start_to_end[called_prod_start]
                         # add edge from call node to start node of production
-                        self.graph.add_edge(pydot.Edge(new_node.long_name, self.nodes[start].long_name, color="red"))
-                        add_edge(new_node, self.nodes[start], "")
-                        # set prev_node to prod• so next edge source is correct
-                        prev_node = new_node
-                        end_node = self.nodes[end]
+                        self.add_edge(new_node, self.nodes[called_prod_start], "")
+                        # set end_node to prod• so next edge source is correct
+                        end_node = self.nodes[called_prod_end]
                         edge_label = ""
                     else:
                         print(f"\t\TODO RAISE ERROR unrecognized term: {term}") 
                         return
                     
+                    # update prev_node and prefix_label
+                    prev_node = new_node
                     prefix_label = prefix_label + f"{term},"
 
-                exit_node = Node(curr_label, f"[{prefix_label}•]", "production")
-                exit_node.is_entry = is_entry
+                # reached exit node for current production
+                exit_node = self.add_node(curr_label, f"[{prefix_label}•]", "production")
+                curr_label += 1
+
+                exit_node.is_entry = is_entry # may also be entry node if production is A->epsilon
                 exit_node.is_exit = True
                 if prev_node.is_call:
                     exit_node.is_return = True
                     self.map_call_to_return[prev_node.label] = exit_node.label
                     self.map_return_to_call[exit_node.label] = prev_node.label
 
-                self.nodes[curr_label] = exit_node
-                curr_label += 1
-
-                src_node = end_node if prev_node.is_call else prev_node
-                if prev_node.is_call:
-                    print("GOING FROM END TO EXIT", src_node.long_name, exit_node.long_name)
-                add_edge(src_node, exit_node, edge_label)
-                color = "red" if edge_label == "" else "black"
-                self.graph.add_edge(pydot.Edge(src_node.long_name, exit_node.long_name, color=color, label=edge_label))
-
-                # create edge from exit node to end node
-                end_node = self.nodes[self.map_start_to_end[self.map_prod_name_to_start[prod_name]]]
-                add_edge(exit_node, end_node, "")
-                self.graph.add_edge(pydot.Edge(exit_node.long_name, end_node.long_name, color="red"))
-
-        print(self.nodes)
-        print(self.map_call_to_return)
-        print(self.map_return_to_call)        
-        
-
-        # graph.write_png("output.png")
                 
+                src_node = end_node if prev_node.is_call else prev_node
+                self.add_edge(src_node, exit_node, edge_label)
+
+                # create edge from exit node to end node (Ex: A→aB• goes to A•)
+                end_node = self.nodes[self.map_start_to_end[self.map_prod_name_to_start[prod_name]]]
+                self.add_edge(exit_node, end_node, "")
+
+        # print(self.nodes)
+        # print(self.map_call_to_return)
+        # print(self.map_return_to_call)        
+                        
     
     def eclosuer(self, sigma_sets, sigma_end_to_call):
         label_queue = queue.Queue()
@@ -284,7 +287,7 @@ if __name__ == "__main__":
 
     test_gfg.build_gfg(productions, "S")
 
-    # test_gfg.graph.write_png("output.png")
+    test_gfg.graph.write_png("output.png")
 
     data = "7 + 8 + 9"
     print(f"is {data} in language: {test_gfg.recognize_string(data)}")
