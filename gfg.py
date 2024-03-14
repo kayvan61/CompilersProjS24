@@ -2,7 +2,7 @@ from expr_lexer import ExprLexer
 import pydot
 import queue
 
-class Vertex:
+class Node:
     def __init__(self, label, long_name, type):
         self.label = label
         self.long_name = long_name
@@ -12,20 +12,20 @@ class Vertex:
         self.is_entry = False
         self.is_exit = False
         self.is_scan = False
-        self.incoming_edges = {}  # Map to store incoming edges (source vertex: token)
-        self.outgoing_edges = {}  # Map to store outgoing edges (destination vertex: token)
+        self.incoming_edges = {}  # Map to store incoming edges (source node: token consumed)
+        self.outgoing_edges = {}  # Map to store outgoing edges (destination node: token consumed)
 
     def __str__(self):
         return f"{self.long_name}"
     
     def __repr__(self):
-        return f"{self.long_name}\ntype={self.type}\nis_call={self.is_call}\nis_return={self.is_return}\n"
+        return f"{self.long_name}"
     
     def __hash__(self):
         return hash(self.label)
     
     def __eq__(self, other):
-        return isinstance(other, Vertex) and self.label == other.label
+        return isinstance(other, Node) and self.label == other.label
 
 def add_edge(src, dest, label):
     src.outgoing_edges[dest.label] = label
@@ -34,9 +34,12 @@ def add_edge(src, dest, label):
 
 class GFG:
     def __init__(self, lexer):
-        self.vertices = {}
+        self.nodes = {}
+        # self.lexer.tokens defines the set of terminals
         self.lexer = lexer
         self.lexer.build()
+
+        # maps a production name to the start node label for that production
         self.map_prod_name_to_start = {}
         self.map_start_to_end = {}
         self.map_end_to_start = {}
@@ -51,27 +54,27 @@ class GFG:
     def build_gfg(self, productions, start_producition="S"):
         # production : <start node label, end node label>
 
-        # each vertex in the graph is assigned an integer label
+        # each node in the graph is assigned an integer label
         curr_label = 0
 
-        # create the start and end vertex for the start producition first
-        # ensures that the start vertex for the gfg is vertex 0
-        # ensures that the end vertex for the gfg is vertex 1
-        self.vertices[curr_label] = Vertex(curr_label, f"•{start_producition}", "start")
-        self.vertices[curr_label + 1] = Vertex(curr_label + 1, f"{start_producition}•", "end")
+        # create the start and end node for the start producition first
+        # ensures that the start node for the gfg is node 0
+        # ensures that the end node for the gfg is node 1
+        self.nodes[curr_label] = Node(curr_label, f"•{start_producition}", "start")
+        self.nodes[curr_label + 1] = Node(curr_label + 1, f"{start_producition}•", "end")
 
         self.map_prod_name_to_start[start_producition] = curr_label
         self.map_start_to_end[curr_label] = curr_label + 1
         self.map_end_to_start[curr_label + 1] = curr_label
         curr_label += 2
 
-        # create start and vertex for every other production
+        # create start and end node for every other production
         for prod_name in productions:
             if prod_name is not start_producition:
-                self.vertices[curr_label] = Vertex(curr_label, f"•{prod_name}", "start")
+                self.nodes[curr_label] = Node(curr_label, f"•{prod_name}", "start")
                 self.graph.add_node(pydot.Node(f"•{prod_name}", shape="circle"))
 
-                self.vertices[curr_label + 1] = Vertex(curr_label + 1, f"{prod_name}•", "end")
+                self.nodes[curr_label + 1] = Node(curr_label + 1, f"{prod_name}•", "end")
                 self.graph.add_node(pydot.Node(f"{prod_name}•", shape="circle"))
 
                 self.map_prod_name_to_start[prod_name] = curr_label
@@ -84,50 +87,50 @@ class GFG:
             for prod_rhs in prods:
                 # print(f"\tCreating production: {prod_name}→{prod_rhs}")
 
-                # previous vertex in the production
-                prev_vertex = self.vertices[self.map_prod_name_to_start[prod_name]]
-                # set if previous vertex as a call vertex
-                end_vertex = None 
+                # previous node in the production
+                prev_node = self.nodes[self.map_prod_name_to_start[prod_name]]
+                # set if previous node as a call node
+                end_node = None 
                 edge_label = ""
                 prefix_label = f"{prod_name}→"
                 is_entry = True
 
                 for term in prod_rhs:
-                    new_vertex = Vertex(curr_label, f"[{prefix_label}•{term}]", "production")
-                    new_vertex.is_entry = is_entry
+                    new_node = Node(curr_label, f"[{prefix_label}•{term}]", "production")
+                    new_node.is_entry = is_entry
                     is_entry = False
-                    if prev_vertex.is_call:
-                        new_vertex.is_return = True
-                        self.map_call_to_return[prev_vertex.label] = new_vertex.label
-                        self.map_return_to_call[new_vertex.label] = prev_vertex.label
+                    if prev_node.is_call:
+                        new_node.is_return = True
+                        self.map_call_to_return[prev_node.label] = new_node.label
+                        self.map_return_to_call[new_node.label] = prev_node.label
 
                     self.graph.add_node(pydot.Node(f"[{prefix_label}•{term}]", shape="circle"))
-                    self.vertices[curr_label] = new_vertex
+                    self.nodes[curr_label] = new_node
                     curr_label += 1
 
-                    # add edge from prev_node to new_vertex with appropriate label
-                    src_vertex = end_vertex if prev_vertex.is_call else prev_vertex
-                    add_edge(src_vertex, new_vertex, edge_label)
+                    # add edge from prev_node to new_node with appropriate label
+                    src_node = end_node if prev_node.is_call else prev_node
+                    add_edge(src_node, new_node, edge_label)
                     color = "red" if edge_label == "" else "black"
-                    self.graph.add_edge(pydot.Edge(src_vertex.long_name, new_vertex.long_name, label=edge_label, color=color))
+                    self.graph.add_edge(pydot.Edge(src_node.long_name, new_node.long_name, label=edge_label, color=color))
 
                     if term in self.lexer.tokens:
                         # print(f"\t\t{term} is a terminal")
-                        new_vertex.is_scan = True
+                        new_node.is_scan = True
                         edge_label = f"{term}"
-                        prev_vertex = new_vertex
-                        end_vertex = None
+                        prev_node = new_node
+                        end_node = None
                     elif term in productions:
                         # print(f"\t\t{term} is a production")
-                        new_vertex.is_call = True
+                        new_node.is_call = True
                         start = self.map_prod_name_to_start[term]
                         end = self.map_start_to_end[start]
-                        # add edge from call vertex to start vertex of production
-                        self.graph.add_edge(pydot.Edge(new_vertex.long_name, self.vertices[start].long_name, color="red"))
-                        add_edge(new_vertex, self.vertices[start], "")
-                        # set prev_vertex to prod• so next edge source is correct
-                        prev_vertex = new_vertex
-                        end_vertex = self.vertices[end]
+                        # add edge from call node to start node of production
+                        self.graph.add_edge(pydot.Edge(new_node.long_name, self.nodes[start].long_name, color="red"))
+                        add_edge(new_node, self.nodes[start], "")
+                        # set prev_node to prod• so next edge source is correct
+                        prev_node = new_node
+                        end_node = self.nodes[end]
                         edge_label = ""
                     else:
                         print(f"\t\TODO RAISE ERROR unrecognized term: {term}") 
@@ -135,30 +138,30 @@ class GFG:
                     
                     prefix_label = prefix_label + f"{term},"
 
-                exit_vertex = Vertex(curr_label, f"[{prefix_label}•]", "production")
-                exit_vertex.is_entry = is_entry
-                exit_vertex.is_exit = True
-                if prev_vertex.is_call:
-                    exit_vertex.is_return = True
-                    self.map_call_to_return[prev_vertex.label] = exit_vertex.label
-                    self.map_return_to_call[exit_vertex.label] = prev_vertex.label
+                exit_node = Node(curr_label, f"[{prefix_label}•]", "production")
+                exit_node.is_entry = is_entry
+                exit_node.is_exit = True
+                if prev_node.is_call:
+                    exit_node.is_return = True
+                    self.map_call_to_return[prev_node.label] = exit_node.label
+                    self.map_return_to_call[exit_node.label] = prev_node.label
 
-                self.vertices[curr_label] = exit_vertex
+                self.nodes[curr_label] = exit_node
                 curr_label += 1
 
-                src_vertex = end_vertex if prev_vertex.is_call else prev_vertex
-                if prev_vertex.is_call:
-                    print("GOING FROM END TO EXIT", src_vertex.long_name, exit_vertex.long_name)
-                add_edge(src_vertex, exit_vertex, edge_label)
+                src_node = end_node if prev_node.is_call else prev_node
+                if prev_node.is_call:
+                    print("GOING FROM END TO EXIT", src_node.long_name, exit_node.long_name)
+                add_edge(src_node, exit_node, edge_label)
                 color = "red" if edge_label == "" else "black"
-                self.graph.add_edge(pydot.Edge(src_vertex.long_name, exit_vertex.long_name, color=color, label=edge_label))
+                self.graph.add_edge(pydot.Edge(src_node.long_name, exit_node.long_name, color=color, label=edge_label))
 
-                # create edge from exit vertex to end vertex
-                end_vertex = self.vertices[self.map_start_to_end[self.map_prod_name_to_start[prod_name]]]
-                add_edge(exit_vertex, end_vertex, "")
-                self.graph.add_edge(pydot.Edge(exit_vertex.long_name, end_vertex.long_name, color="red"))
+                # create edge from exit node to end node
+                end_node = self.nodes[self.map_start_to_end[self.map_prod_name_to_start[prod_name]]]
+                add_edge(exit_node, end_node, "")
+                self.graph.add_edge(pydot.Edge(exit_node.long_name, end_node.long_name, color="red"))
 
-        print(self.vertices)
+        print(self.nodes)
         print(self.map_call_to_return)
         print(self.map_return_to_call)        
         
@@ -180,9 +183,9 @@ class GFG:
             label, tag = label_queue.get()
             print("label ", label, curr_sigma_set)
 
-            vertex = self.vertices[label]
+            node = self.nodes[label]
 
-            if vertex.type == "end":
+            if node.type == "end":
                 if label in sigma_end_to_call[tag]:
                     for call_label, call_tag in sigma_end_to_call[tag][label]:
                         return_label = self.map_call_to_return[call_label]
@@ -192,9 +195,9 @@ class GFG:
                             label_queue.put((return_label, call_tag))
                 else:
                     print("ERROR NO CALL FOR END, label", label, tag, sigma_end_to_call)
-            elif vertex.type == "production" and vertex.is_call:
+            elif node.type == "production" and node.is_call:
                 # should only be one outgoing edge
-                for dest_label, edge_label in vertex.outgoing_edges.items():
+                for dest_label, edge_label in node.outgoing_edges.items():
                     if edge_label == "":
                         # map corresponding end node to call node for when reach end node later
                         end_label = self.map_start_to_end[dest_label]
@@ -215,7 +218,7 @@ class GFG:
             else:
                 # loop through outgoing edges with empty string label
                 # add their dests to same sigma set with same tag
-                for dest_label, edge_label in vertex.outgoing_edges.items():
+                for dest_label, edge_label in node.outgoing_edges.items():
                     if edge_label == "" and (dest_label, tag) not in curr_sigma_set:
                         # propagate the current tag
                         print("other putting", (dest_label, tag))
@@ -248,11 +251,11 @@ class GFG:
 
             # loop through all elements in prev sigma set and see if there is an edge with label tok
             for element in sigma_sets[-1]:
-                vertex_label, tag = element
-                vertex = self.vertices[vertex_label]
+                node_label, tag = element
+                node = self.nodes[node_label]
 
-                if vertex.is_scan:
-                    for dest_label, edge_label in vertex.outgoing_edges.items():
+                if node.is_scan:
+                    for dest_label, edge_label in node.outgoing_edges.items():
                         if (edge_label == tok.type):
                             # propagate current tag to next 
                             next_set.add((dest_label, tag))
