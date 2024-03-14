@@ -2,6 +2,7 @@ from expr_lexer import ExprLexer
 import pydot
 import queue
 
+# models a single node if the grammar flow graph
 class Node:
     def __init__(self, label, long_name, type):
         self.label = label
@@ -27,6 +28,7 @@ class Node:
     def __eq__(self, other):
         return isinstance(other, Node) and self.label == other.label
 
+# models a grammar flow graph
 class GFG:
     def __init__(self, lexer):
         self.nodes = {}
@@ -172,80 +174,99 @@ class GFG:
         # print(self.map_return_to_call)        
                         
     
+    # implements early recognizer inference rules on page 12 of gfg paper except for scan
+    # inference rule which transitions between sigma sets
     def eclosuer(self, sigma_sets, sigma_end_to_call):
         label_queue = queue.Queue()
 
+        # last sigma_set is set to expand
         sigma_num = len(sigma_sets) - 1
         curr_sigma_set = sigma_sets[sigma_num]
 
+        # add all nodes initially in sigma set to queue to explore from
         for element in curr_sigma_set:
-            print("Putting ", element)
             label_queue.put(element)
 
         while not label_queue.empty():
             label, tag = label_queue.get()
-            print("label ", label, curr_sigma_set)
+            # print("label ", label, curr_sigma_set)
 
             node = self.nodes[label]
 
             if node.type == "end":
+                # implements end inference rule
+                # may not be any call node for production if the current end node is the end node
+                # of the start production
                 if label in sigma_end_to_call[tag]:
+                    # get call nodes that called the production in the tag sigma set
                     for call_label, call_tag in sigma_end_to_call[tag][label]:
+                        # get return node associated with the call node
                         return_label = self.map_call_to_return[call_label]
-                        if (return_label, call_tag) not in curr_sigma_set:
-                            print("putting end", (return_label, call_tag))
-                            curr_sigma_set.add((return_label, call_tag))
-                            label_queue.put((return_label, call_tag))
-                else:
-                    print("ERROR NO CALL FOR END, label", label, tag, sigma_end_to_call)
-            elif node.type == "production" and node.is_call:
-                # should only be one outgoing edge
+                        # if return node is not already in the sigma set, add it to the sigma
+                        # set and the work queue
+                        # tag of return node is set to tag of call node 
+                        return_elem = (return_label, call_tag)
+                        if return_elem not in curr_sigma_set:
+                            curr_sigma_set.add(return_elem)
+                            label_queue.put(return_elem)
+            elif node.is_call:
+                # implements the call inference rule
+                # guaranteed to only be one outgoing edge with empty string edge label
                 for dest_label, edge_label in node.outgoing_edges.items():
-                    if edge_label == "":
                         # map corresponding end node to call node for when reach end node later
                         end_label = self.map_start_to_end[dest_label]
+
+                        # add end_label -> (label, tag) to current sigma_end_to_call_map if it
+                        # not already in the map
                         if end_label in sigma_end_to_call[sigma_num] and (label, tag) not in sigma_end_to_call[sigma_num][end_label]:
+                            # handles case where list of call nodes for end_label already exists
+                            # since there may be multiple call nodes for the same production in the
+                            # sigma set
                             sigma_end_to_call[sigma_num][end_label].append((label, tag))
-                            print("\t\tadding ", (label, sigma_num))
                         elif end_label not in sigma_end_to_call[sigma_num]:
+                            # hanldes case where this is the first call node for the production
                             sigma_end_to_call[sigma_num][end_label] = [(label, tag)] 
-                            print("\t\tadding ", (label, sigma_num))
                     
                         if (dest_label, sigma_num) not in curr_sigma_set:
-                            # call node so set tag to current sigma number
-                            print("putting is_call", (dest_label, sigma_num))
+                            # adding start node so set tag to current sigma number
                             curr_sigma_set.add((dest_label, sigma_num))
-                            label_queue.put((dest_label, sigma_num))
-
-                                               
+                            label_queue.put((dest_label, sigma_num))                                             
             else:
+                # implements start and exit inference rules as these just follow empty string edges
                 # loop through outgoing edges with empty string label
                 # add their dests to same sigma set with same tag
                 for dest_label, edge_label in node.outgoing_edges.items():
                     if edge_label == "" and (dest_label, tag) not in curr_sigma_set:
                         # propagate the current tag
-                        print("other putting", (dest_label, tag))
                         curr_sigma_set.add((dest_label, tag))
                         label_queue.put((dest_label, tag))
         
-        print("curr sigma set", curr_sigma_set)
-        print("curr sigma end to call", sigma_end_to_call[-1])
-        print("------------------------")
+        # print("curr sigma set", curr_sigma_set)
+        # print("curr sigma end to call", sigma_end_to_call[-1])
+        # print("------------------------")
 
-
+    # returns True if string is language of grammar of gfg, False otherwise
     def recognize_string(self,data):
         self.lexer.input(data)
 
         sigma_sets = []
+        # zeroth sigma set initially contains <•S, 0>
+        # implements the init inference rule
         sigma_sets.append(set([(0, 0)]))
+        # maps an end node of production to all call nodes that invoked that production
+        # in its corresponding sigma set, used from going from an end node to a return node
+        # in the eclosuer function
         sigma_end_to_call = []
         sigma_end_to_call.append({})
 
-        print("eclouser sigma 0")
+        # find all nodes from S• that can be reached by taking empty string edges (essentially)
         self.eclosuer(sigma_sets, sigma_end_to_call)
 
+        # loop until there are no more input tokens (there is probably a better way to write this)
         while True:
+            # get next token in the input
             tok = self.lexer.token()
+            # check if reached end of input
             if not tok:
                 break
 
@@ -253,6 +274,7 @@ class GFG:
             next_set = set()
 
             # loop through all elements in prev sigma set and see if there is an edge with label tok
+            # this is the scan inference rule for the early recognizer on pg 12 of gfg paper
             for element in sigma_sets[-1]:
                 node_label, tag = element
                 node = self.nodes[node_label]
@@ -263,13 +285,13 @@ class GFG:
                             # propagate current tag to next 
                             next_set.add((dest_label, tag))
 
+            # append the next sigma set and map end to call
             sigma_sets.append(next_set)
             sigma_end_to_call.append({})
-            print("before eclosuer sigma:", next_set)
+            # eclosuer updates both next_set and the last map in sigma_end_to_call
             self.eclosuer(sigma_sets, sigma_end_to_call)
-            
-
-        # check if <S•, 0> is in last sigma set 
+        
+        # return whether <S•, 0> is in last sigma set 
         return (1, 0) in sigma_sets[-1]
 
         
@@ -277,6 +299,7 @@ class GFG:
 if __name__ == "__main__":
     test_gfg = GFG(ExprLexer())
 
+    # simple expression grammar used in gfg paper examples
     productions = {
         "S": [["E"]],
         "E": [["number"],
@@ -287,14 +310,11 @@ if __name__ == "__main__":
 
     test_gfg.build_gfg(productions, "S")
 
-    test_gfg.graph.write_png("output.png")
+    # must have graphvis installed for this to work
+    # test_gfg.graph.write_png("output.png")
 
     data = "7 + 8 + 9"
     print(f"is {data} in language: {test_gfg.recognize_string(data)}")
 
-
     data = "(7+9"
     print(f"is {data} in language: {test_gfg.recognize_string(data)}")
-
-
-    print("done")
