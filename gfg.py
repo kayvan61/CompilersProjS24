@@ -367,6 +367,7 @@ class GFG:
                 curr_elem = stack.pop()
                 output_stack.pop()
             elif node.type == "end":
+                print(f"({self.nodes[label].long_name}, {tag}, {curr_sigma_num})")
                 # implements EXIT^-1 rule, has non determinism
                 # At A•, go to A->something•, may be multiple possible values
                 for src_label in node.incoming_edges:
@@ -379,7 +380,7 @@ class GFG:
                         prod_children = []
                         if len(output_stack) != 0:
                             # add production as a child to current production
-                            output_stack[-1][1].append((prod_name, prod_children))
+                            output_stack[-1][1].insert(0, (prod_name, prod_children))
                         # set this production to the current production
                         output_stack.append((prod_name, prod_children))
                         break
@@ -414,7 +415,7 @@ class GFG:
                         print ("ERROR EXPECTING SCAN EDGE, got empty edge")
                         return False
                     else:
-                        output_stack[-1][1].append(edge_label)
+                        output_stack[-1][1].insert(0, edge_label)
                         curr_elem = (src_label, tag)
                         curr_sigma_num -= 1
 
