@@ -427,7 +427,7 @@ class GFG:
             for src_label in node.incoming_edges:
                 return self.nodes[src_label].is_entry
 
-    def get_sppf(self, sigma_sets, sigma_end_to_call, curr_elem, curr_sigma_num, prev_node, sppf, processed):
+    def get_sppf(self, sigma_sets, sigma_end_to_call, curr_elem, curr_sigma_num, sppf, processed):
         assert curr_elem not in processed
         label, tag = curr_elem
         processed.add(curr_elem)
@@ -439,22 +439,21 @@ class GFG:
             new_node = (label, tag, curr_sigma_num)
             sppf.add_node(new_node, prod_name, "symbol")
 
-            if (prev_node is not None):
-                sppf.add_edge(prev_node, new_node)
             # implements EXIT^-1 rule, has non determinism
             # At A•, go to A->something•, may be multiple possible values
             for src_label in node.incoming_edges:
                 next_elem = (src_label, tag)
                 if next_elem in sigma_sets[curr_sigma_num] and next_elem not in processed:
-                    self.get_sppf(sigma_sets, sigma_end_to_call, next_elem, curr_sigma_num, new_node, sppf, processed)
+                    next_node = self.get_sppf(sigma_sets, sigma_end_to_call, next_elem, curr_sigma_num, sppf, processed)
+                    sppf.add_edge(new_node, next_node)
+
+
+            return new_node
         elif node.type == "production" and self.is_node_one_before_start(node) and node.is_return:
             print(f"({node.long_name}, {tag}, {curr_sigma_num})")
             new_node = (label, tag, curr_sigma_num)
             sppf.add_node(new_node, node.long_name, "symbol")
             
-            # add new_node to family of prev_node???
-            sppf.add_edge(prev_node, new_node)
-
             # only one incoming edge from B*
             for src_label in node.incoming_edges:
                 call_label = self.map_return_to_call[label]
@@ -463,13 +462,16 @@ class GFG:
                     if src_label == sigma_elem[0] and sigma_elem not in processed:
                         src_tag = sigma_elem[1]
                         if (call_label, tag) in sigma_sets[src_tag]:
-                            self.get_sppf(sigma_sets, sigma_end_to_call, sigma_elem, curr_sigma_num, new_node, sppf, processed)                        
+                            symbol_node = self.get_sppf(sigma_sets, sigma_end_to_call, sigma_elem, curr_sigma_num, sppf, processed)
+                            sppf.add_edge(new_node, symbol_node)
+
+            return new_node                       
 
 
 
 
         elif node.type == "production" and self.is_node_one_before_start(node):
-            # TODO one terminal before start of produciton: EX A->a*B
+            # one terminal before start of produciton: EX A->a*B
             print(f"({node.long_name}, {tag}, {curr_sigma_num})")
 
             # will only be one incoming edge
@@ -477,10 +479,14 @@ class GFG:
                 new_node = (edge_label, curr_sigma_num - 1, curr_sigma_num)
                 sppf.add_node(new_node, edge_label, "symbol")
 
-                sppf.add_edge(prev_node, new_node)
+                return new_node
         elif node.type == "production" and node.is_return:
             print(f"({node.long_name}, {tag}, {curr_sigma_num})")
             # print(f" reached return node not at start of production case")
+
+            new_node = (label, tag, curr_sigma_num)
+            sppf.add_node(new_node, node.long_name, "intermediate")
+
             # at A->aB•g, go to B• and add A->a•Bg to stack
             # there will only be one incoming edge from B•
             for src_label in node.incoming_edges:
@@ -491,23 +497,49 @@ class GFG:
                         src_tag = sigma_elem[1]
                         if (call_label, tag) in sigma_sets[src_tag]:
                             # print(f"\t{sigma_elem}")
-                            # stack.append((call_label, tag))
                             # found "reduction pointer" with label src_tag
                             # create node for (B, src_tag, curr_sigma_num)
 
                             production_node = (src_label, src_tag, curr_sigma_num)
                             #sppf.add_node(production_node, self.nodes[src_label].long_name, "symbol")
                             if sigma_elem not in processed:
-                                self.get_sppf(sigma_sets, sigma_end_to_call, sigma_elem, curr_sigma_num, None, sppf, processed)
+                                self.get_sppf(sigma_sets, sigma_end_to_call, sigma_elem, curr_sigma_num, sppf, processed)
 
                             prefix_node = (call_label, tag, src_tag)
-                            sppf.add_node(prefix_node, self.nodes[call_label].long_name, "intermediate")
-
+                            sppf.add_node(prefix_node, self.nodes[call_label].long_name, "intermediate") # ????????????????????????????????????????
                             if (call_label, tag) not in processed:
-                                self.get_sppf(sigma_sets, sigma_end_to_call, (call_label, tag), src_tag, None, sppf, processed)
-                                pass
+                                self.get_sppf(sigma_sets, sigma_end_to_call, (call_label, tag), src_tag, sppf, processed)
 
-                            sppf.add_family(prev_node, prefix_node, production_node)
+                            sppf.add_family(new_node, prefix_node, production_node)
+
+            return new_node
+        elif node.type == "production":
+            print(f"({node.long_name}, {tag}, {curr_sigma_num})")
+            print("reached end")
+
+            new_node = (label, tag, curr_sigma_num)
+            sppf.add_node(new_node, node.long_name, "intermediate")
+
+            
+
+            # will only be one incoming edge
+            # for src_label, edge_label in node.incoming_edges.items():
+            #     terminal_node = (edge_label, curr_sigma_num - 1, curr_sigma_num)
+            #     sppf.add_node(terminal_node, edge_label, "symbol")
+
+
+            #     prefix_node = (src_label, tag, curr_sigma_num - 1)
+            #     sppf.add_node(prefix_node, self.nodes[src_label].long_name, "intermediate")
+
+            #     prefix_sigma_elem = (src_label, curr_sigma_num - 1) 
+            #     if prefix_sigma_elem not in processed:
+            #         self.get_sppf(sigma_sets, sigma_end_to_call, prefix_sigma_elem, curr_sigma_num - 1, sppf, processed)
+            #         pass
+
+            #     sppf.add_family(new_node, prefix_node, terminal_node)
+
+            return new_node
+
         else:
             print(f"reached case not covered yet by code, curr_elem = {curr_elem}")
 
@@ -566,7 +598,7 @@ class GFG:
         # string is in grammar, traverse backwards through sigma sets to build a parse tree
 
         sppf = Sppf()
-        self.get_sppf(sigma_sets, sigma_end_to_call, (1, 0), len(sigma_sets) - 1, None, sppf, set())
+        self.get_sppf(sigma_sets, sigma_end_to_call, (1, 0), len(sigma_sets) - 1, sppf, set())
         return sppf
 
 def print_help(val, level):
