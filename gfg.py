@@ -313,6 +313,8 @@ class GFG:
     def sppf_forward(self, data, productions, start_producition="S"):
         self.lexer.input(data)
         sigma_sets = [set() for x in range(len(data) + 1)]
+        self.family_map = {}
+        self.sppf = Sppf()
 
         Q_p = set() # scan forward elements 
         R = set() # set of items that need to be processed to add to cur sigma
@@ -423,7 +425,10 @@ class GFG:
             
             V = set()
             #create an SPPF node v labelled (a_i+1,i,i+1)
-            v = -1 #TODO
+            if in_tok is not None:
+                self.sppf.add_node((in_tok.type, i, i+1), in_tok.type, "")
+                v = (in_tok.type, i, i+1)
+                print("creating token node:", (in_tok.type, i, i+1))
 
             in_tok = self.lexer.token()
             while len(Q) > 0:
@@ -441,16 +446,41 @@ class GFG:
                             Q_p.add(e_item)
                             print("added scan", self.nodes[next_node])
 
-            
-            for e, l, j in sigma_sets[i]:
-                print(self.nodes[e])
-            print("-"*5, i, "-"*5)
-
-        print(sigma_sets[-1])
+        for x in sigma_sets[-1]:
+            if x[0] == 1:
+                return x[2]
+        print("no parse!")
             
 
-    def make_forward_node(self, ret, h, i, w, other_sppf_node, all_sppf_nodes):
-        return -1
+    def make_forward_node(self, ret, j, i, w, other_sppf_node, all_sppf_nodes):
+        # if done we should create the node that captures the whole production
+        if self.nodes[ret].is_exit:
+            s = next(iter(self.nodes[ret].outgoing_edges))
+            s = self.map_end_to_start[s]
+            s = self.nodes[s]
+            # s = self.map_start_to_prod_name[s]
+        else:
+            s = self.nodes[ret]
+        
+        # if we just started then we should set y to the node given to us
+        if self.nodes[ret].is_entry:
+            y = other_sppf_node
+        else:
+            attempted_node = (s, j, i)
+            if attempted_node not in all_sppf_nodes:
+                print("creating sppf node:", attempted_node)
+                all_sppf_nodes.add(attempted_node)
+                self.sppf.add_node(attempted_node, s.long_name, "") 
+            if w == -1:
+                if other_sppf_node not in [x[0] for x in self.sppf.nodes[attempted_node].outgoing_edges.items()]:
+                    print("other_sppf_node", other_sppf_node)
+                    self.sppf.add_edge(attempted_node, other_sppf_node)
+            if w != -1:
+                family_def = (f"{w},{other_sppf_node}", w, other_sppf_node)
+                if family_def not in [x[0] for x in self.sppf.nodes[attempted_node].outgoing_edges.items()]:
+                    self.sppf.add_family(attempted_node, w, other_sppf_node)
+            y = attempted_node
+        return y
 
 
     def parse_string(self,data):
@@ -820,6 +850,7 @@ if __name__ == "__main__":
 
     data = "bab"
     test_gfg.sppf_forward(data, productions, "S")
+    test_gfg.sppf.graph.write_png("./sppf_forward.png")
     print(f"is {data} in language: {test_gfg.recognize_string(data)}")
     # print(f"{data} parse tree:")
     # print_tree(test_gfg.parse_string(data))
