@@ -6,15 +6,17 @@ import queue
 
 # models a single node if the grammar flow graph
 class Node:
-    def __init__(self, label, long_name, type):
+    def __init__(self, label, long_name, type, non_term):
         self.label = label
         self.long_name = long_name
         self.type = type
+        self.non_term = non_term
         self.is_call = False
         self.is_return = False
         self.is_entry = False
         self.is_exit = False
         self.is_scan = False
+        self.is_remaining_sentinal = False # if the remainder of the production is in sentinal form. 
         self.incoming_edges = {}  # Map to store incoming edges (source node: token consumed)
         self.outgoing_edges = {}  # Map to store outgoing edges (destination node: token consumed)
 
@@ -48,8 +50,8 @@ class GFG:
         # simply used for debugging to visualize the gfg
         self.graph = pydot.Dot("my_graph", graph_type="digraph", bgcolor="yellow")
 
-    def add_node(self, label, long_name, type):
-        self.nodes[label] = Node(label, long_name, type)
+    def add_node(self, label, long_name, type, non_term):
+        self.nodes[label] = Node(label, long_name, type, non_term)
         # add node to pydot graph for visualization/debugging only
         self.graph.add_node(pydot.Node(long_name, shape="circle"))
         return self.nodes[label]
@@ -57,8 +59,8 @@ class GFG:
     # create the start and end nodes for a given production, curr_label is the next available
     # int label that can be used to represent a node
     def create_start_end_nodes_for_prod(self, prod_name, curr_label):
-        self.add_node(curr_label, f"•{prod_name}", "start")
-        self.add_node(curr_label + 1, f"{prod_name}•", "end")
+        self.add_node(curr_label, f"•{prod_name}", "start", prod_name)
+        self.add_node(curr_label + 1, f"{prod_name}•", "end", prod_name)
 
         # update maps to keep track of relationship between production names and nodes
         self.map_prod_name_to_start[prod_name] = curr_label
@@ -110,8 +112,8 @@ class GFG:
                 prefix_label = f"{prod_name}→"
                 is_entry = True
 
-                for term in prod_rhs:
-                    new_node = self.add_node(curr_label, f"[{prefix_label}•{term}]", "production")
+                for i, term in enumerate(prod_rhs):
+                    new_node = self.add_node(curr_label, f"[{prefix_label}•{term}]", "production", prod_name)
                     curr_label += 1
                     new_node.is_entry = is_entry
                     is_entry = False
@@ -156,7 +158,7 @@ class GFG:
                     prefix_label = prefix_label + f"{term},"
 
                 # reached exit node for current production
-                exit_node = self.add_node(curr_label, f"[{prefix_label}•]", "production")
+                exit_node = self.add_node(curr_label, f"[{prefix_label}•]", "production", prod_name)
                 curr_label += 1
 
                 exit_node.is_entry = is_entry # may also be entry node if production is A->epsilon
@@ -174,10 +176,19 @@ class GFG:
                 end_node = self.nodes[self.map_start_to_end[self.map_prod_name_to_start[prod_name]]]
                 self.add_edge(exit_node, end_node, "")
 
-        # print(self.nodes)
-        # print(self.map_call_to_return)
-        # print(self.map_return_to_call)        
-                        
+        for p in productions.keys():
+            start = self.map_prod_name_to_start[p]
+            end = self.map_start_to_end[start]
+            for exit_node in self.nodes[end].incoming_edges.keys():
+                # parent is the exit node
+                self.nodes[exit_node].is_remaining_sentinal = True # remainder is eps which is sentinal
+                for parent_node in self.nodes[exit_node].incoming_edges.keys():
+                    cur_node = parent_node
+                    while self.nodes[cur_node].is_scan:
+                        self.nodes[cur_node].is_remaining_sentinal = True
+                        if len(self.nodes[cur_node].incoming_edges) != 1:
+                               break
+                        cur_node = next(iter(self.nodes[cur_node].incoming_edges.keys()))
     
     # implements early recognizer inference rules on page 12 of gfg paper except for scan
     # inference rule which transitions between sigma sets
@@ -299,6 +310,148 @@ class GFG:
         # return whether <S•, 0> is in last sigma set 
         return (1, 0) in sigma_sets[-1]
     
+    def sppf_forward(self, data, productions, start_producition="S"):
+        self.lexer.input(data)
+        sigma_sets = [set() for x in range(len(data) + 1)]
+
+        Q_p = set() # scan forward elements 
+        R = set() # set of items that need to be processed to add to cur sigma
+        V = set() # created sppf nodes
+
+        # set of start nodes that are all terminals or start with a call
+        in_tok = self.lexer.token()
+
+        # all productions out of the start of start symbol
+        # first for all in paper
+        # find all the things that we should explore, or that consume the first token
+        sigma_sets[0].add((self.map_prod_name_to_start[start_producition],0,-1))
+        v = -1
+
+        for i in range(len(data)+1): 
+            R = sigma_sets[i].copy()
+            H = set() # when we hit the end of a production, we need to backtrack to the caller. (Start node, sppf node)
+            Q = Q_p.copy()
+            Q_p = set()
+
+            # current Earley set to explore. 
+            while len(R) > 0:
+                element = R.pop()
+                ele_node = self.nodes[element[0]]
+                h = element[1]
+                w = element[2]
+
+                print("processing", ele_node)
+
+                # this kinda captures that first for all loop
+                if ele_node.type == "start":
+                    for child, _ in ele_node.outgoing_edges.items():
+                        e_item = (child, i, -1)
+                        # start nodes need to add all sentinal, and first call nodes to the sigma set and work list
+                        if self.nodes[child].is_call or self.nodes[child].is_remaining_sentinal and e_item not in sigma_sets[i]:
+                            R.add(e_item)
+                            sigma_sets[i].add(e_item)
+                            print("added", self.nodes[child])
+                        
+                        # start nodes need to check if they can do one scan
+                        for scan_child, scan_tok in self.nodes[child].outgoing_edges.items():
+                            if in_tok is not None and in_tok.type == scan_tok:
+                                Q.add(e_item)
+                                print("added scan", self.nodes[child])
+                
+                # a call node in the current set needs to go explore that production's start node
+                # this is here to adds starts, and goes past them using the loop above. 
+                if ele_node.is_call:
+                    for child, tok in ele_node.outgoing_edges.items():
+                        e_item = (child, i, -1)
+                        if self.nodes[child].type == "start" and e_item not in sigma_sets[i]:
+                            R.add(e_item)
+                            sigma_sets[i].add(e_item)
+                            print("added", self.nodes[child])
+                        elif self.nodes[child].type != "start":
+                            print("call has an edge that doesn't goto a start?")
+                            print(self.nodes[child])
+                            exit(-1)
+                    
+                    # if something has returned from this start, then create a sppf node, and continue exploring 
+                    callee = next(iter(ele_node.outgoing_edges.keys()))
+                    if (callee, v) in H:
+                        ret_node = self.map_call_to_return[element[0]]
+                        y = self.make_forward_node(ret_node, h, i, w, v, V)
+                        e_item = (ret_node, h, y)
+                        if self.nodes[ret_node].is_call or self.nodes[ret_node].is_remaining_sentinal and e_item not in sigma_sets[i]:
+                            sigma_sets[i].add(e_item)
+
+                        # on return need to scan
+                        for scan_child, scan_tok in self.nodes[ret_node].outgoing_edges.items():
+                            if in_tok.type == scan_tok:
+                                Q.add(e_item)
+                                print("added scan", self.nodes[ret_node])
+
+                if ele_node.is_exit:
+                    #adding in the end node for fun
+                    end_node = next(iter(ele_node.outgoing_edges.keys()))
+                    sigma_sets[i].add((end_node, h, -1))
+                    print("exit", ele_node, h)
+                    if w == -1:
+                        # made the node for this parse 
+                        pass 
+                    if h == i:
+                        print("finish parse")
+                        end_node = next(iter(ele_node.outgoing_edges.keys()))
+                        start_node = self.map_end_to_start[end_node]
+                        H.add((start_node, w))
+
+                    # this is just back tracking on parse complete
+                    for item in sigma_sets[h]:
+                        cn, k, z = item
+                        if not self.nodes[cn].is_call:
+                            continue
+                        print("back track:", self.nodes[cn])
+                        ret_node = self.map_call_to_return[cn]
+                        print("back track ret:", self.nodes[ret_node])
+                        y = self.make_forward_node(ret_node, k, i, z, w, V)
+                        e_item = (ret_node, k, y)
+                        if self.nodes[ret_node].is_call or self.nodes[ret_node].is_remaining_sentinal and e_item not in sigma_sets[i]:
+                            sigma_sets[i].add(e_item)
+                            R.add(e_item)
+
+                        # on return need to scan
+                        for scan_child, scan_tok in self.nodes[ret_node].outgoing_edges.items():
+                            if in_tok is not None and in_tok.type == scan_tok:
+                                Q.add(e_item)
+                                print("added scan", self.nodes[ret_node])
+            
+            V = set()
+            #create an SPPF node v labelled (a_i+1,i,i+1)
+            v = -1 #TODO
+
+            in_tok = self.lexer.token()
+            while len(Q) > 0:
+                element = Q.pop()
+                node, h, w = element
+                if self.nodes[node].is_scan:
+                    next_node = next(iter(self.nodes[node].outgoing_edges))
+                    y = self.make_forward_node(next_node, h, i+1, w, v, V)
+                    e_item = (next_node, h, y)
+                    if self.nodes[next_node].is_call or self.nodes[next_node].is_remaining_sentinal:
+                        sigma_sets[i+1].add(e_item)
+                    # on return need to scan
+                    for scan_child, scan_tok in self.nodes[next_node].outgoing_edges.items():
+                        if in_tok is not None and in_tok.type == scan_tok:
+                            Q_p.add(e_item)
+                            print("added scan", self.nodes[next_node])
+
+            
+            for e, l, j in sigma_sets[i]:
+                print(self.nodes[e])
+            print("-"*5, i, "-"*5)
+
+        print(sigma_sets[-1])
+            
+
+    def make_forward_node(self, ret, h, i, w, other_sppf_node, all_sppf_nodes):
+        return -1
+
 
     def parse_string(self,data):
         self.lexer.input(data)
@@ -640,9 +793,10 @@ if __name__ == "__main__":
     # }
 
     productions = {
-        "S": [["L"]],
+        "S": [["L"], ["b","b","b","b"]],
         "L": [["b"],
-              ["L", "L"]    
+              ["L", "L"],
+              ["a", "b"]    
         ]
     }
 
@@ -664,10 +818,11 @@ if __name__ == "__main__":
     # print(f"is {data} in language: {test_gfg.recognize_string(data)}")
 
 
-    data = "bbb"
+    data = "bab"
+    test_gfg.sppf_forward(data, productions, "S")
     print(f"is {data} in language: {test_gfg.recognize_string(data)}")
     # print(f"{data} parse tree:")
     # print_tree(test_gfg.parse_string(data))
 
-    sppf = test_gfg.parse_all_trees(data)
-    sppf.graph.write_png("sppf.png")
+    # sppf = test_gfg.parse_all_trees(data)
+    # sppf.graph.write_png("sppf.png")

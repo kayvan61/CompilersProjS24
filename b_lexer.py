@@ -9,11 +9,13 @@ import ply.lex as lex
 class BLexer(object):
     # List of token names.   This is always required
     tokens = [
-       'b'
+       'b',
+       'a'
     ]
 
     # Regular expression rules for simple tokens
     t_b  = r'[b]'
+    t_a  = r'[a]'
 
     # A string containing ignored characters (spaces, tabs and newlines)
     t_ignore  = ' \t\n'
