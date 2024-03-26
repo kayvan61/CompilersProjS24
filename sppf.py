@@ -32,7 +32,22 @@ class Sppf:
 
     def __init__(self):
         self.nodes = {}
-        self.graph = pydot.Dot("sppf_graph", graph_type="digraph", bgcolor="yellow")
+        self.graph = pydot.Dot("sppf_graph", graph_type="digraph", bgcolor="white")
+        
+    def rebuild_with_root(self, root_node):
+        self.graph = pydot.Dot("sppf_graph", graph_type="digraph", bgcolor="white")
+        root = self.nodes[root_node]
+        self.rebuild_node(root)
+    
+    def rebuild_node(self, node):
+        if node.type == "packed":
+            self.graph.add_node(pydot.Node(node.get_pydot_label(), label="", shape="circle"))
+        else:
+            self.graph.add_node(pydot.Node(node.get_pydot_label(), shape="circle"))
+        for dst,_ in node.outgoing_edges.items():
+            self.rebuild_node(self.nodes[dst])
+            self.graph.add_edge(pydot.Edge(node.get_pydot_label(), self.nodes[dst].get_pydot_label()))
+            
 
     def add_node(self, node_def, long_name, type):
         if node_def not in self.nodes:
