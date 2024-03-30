@@ -422,6 +422,8 @@ class GFG:
                         curr_sigma_num -= 1
 
     def is_node_one_before_start(self, node):
+        if node.is_entry:
+            return False
         if node.is_return:
             return self.nodes[self.map_return_to_call[node.label]].is_entry
         else:
@@ -453,6 +455,24 @@ class GFG:
 
 
             return new_node
+        
+
+        elif node.type == "production" and node.is_entry:
+            assert tag == curr_sigma_num
+            print(f"in empty string case {node.long_name}")
+
+            new_node = (label, tag, curr_sigma_num)
+            sppf.add_node(new_node, node.long_name, "intermediate")
+
+            epsilon_node = ("ϵ", 0, 0)
+            sppf.add_node(epsilon_node, "ϵ", "symbol")
+
+            sppf.add_edge(new_node, epsilon_node)
+
+            return new_node
+
+
+
         elif node.type == "production" and self.is_node_one_before_start(node) and node.is_return:
             print(f"({node.long_name}, {tag}, {curr_sigma_num})")
             new_node = (label, tag, curr_sigma_num)
@@ -481,7 +501,7 @@ class GFG:
             print(f" one terminal before start ({node.long_name}, {tag}, {curr_sigma_num})")
 
             new_node = (label, tag, curr_sigma_num)
-            sppf.add_node(new_node, node.long_name, "symbol")
+            sppf.add_node(new_node, node.long_name, "intermediate")
 
             # will only be one incoming edge
             for src_label, edge_label in node.incoming_edges.items():
@@ -555,7 +575,7 @@ class GFG:
             return new_node
 
         else:
-            print(f"reached case not covered yet by code, curr_elem = {curr_elem}")
+            print(f"reached case not covered yet by code, curr_elem = {curr_elem}, {node.long_name}")
 
 
                     
@@ -651,11 +671,13 @@ if __name__ == "__main__":
     #          ]
     # }
 
-    # example 3 grammar (modified, no epsilon production) in Scott's paper
+    # example 3 grammar in Scott's paper
     productions = {
         "S": [["A", "T"],
               ["a", "T"]],
-        "A": [["a"]],
+        "A": [["a"],
+              ["B", "A"]],
+        "B": [[]],
         "T": [["b", "b", "b"]]
     }
 
