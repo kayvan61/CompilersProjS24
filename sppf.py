@@ -49,13 +49,14 @@ class Sppf:
         src_node = self.nodes[src]
         dest_node = self.nodes[dest]
 
-        src_node.outgoing_edges[dest] = ""
-        dest_node.incoming_edges[src] = ""
+        if dest not in src_node.outgoing_edges and src not in dest_node.incoming_edges:
+            src_node.outgoing_edges[dest] = ""
+            dest_node.incoming_edges[src] = ""
 
-        # optional edges in pydot for gfs visualization, scan edges are black, 
-        # epsilon edges are red
-        self.graph.add_edge(pydot.Edge(src_node.get_pydot_label(), dest_node.get_pydot_label()))
-        # print(f"\t\t\tcreating edge from {src.long_name} to {dest.long_name} with LABEL: {label}")
+            # optional edges in pydot for gfs visualization, scan edges are black, 
+            # epsilon edges are red
+            self.graph.add_edge(pydot.Edge(src_node.get_pydot_label(), dest_node.get_pydot_label()))
+            # print(f"\t\t\tcreating edge from {src.long_name} to {dest.long_name} with LABEL: {label}")
 
     def add_family(self, parent, child1, child2):
         packed_node_def = (f"{child1},{child2}", child1, child2)
