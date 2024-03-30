@@ -421,15 +421,6 @@ class GFG:
                         curr_elem = (src_label, tag)
                         curr_sigma_num -= 1
 
-    def is_node_one_before_start(self, node):
-        if node.is_entry:
-            return False
-        if node.is_return:
-            return self.nodes[self.map_return_to_call[node.label]].is_entry
-        else:
-            for src_label in node.incoming_edges:
-                return self.nodes[src_label].is_entry
-
     def get_sppf(self, sigma_sets, sigma_end_to_call, curr_elem, curr_sigma_num, sppf, processed):
         assert curr_elem not in processed
         label, tag = curr_elem
@@ -472,45 +463,6 @@ class GFG:
             return new_node
 
 
-
-        elif node.type == "production" and self.is_node_one_before_start(node) and node.is_return:
-            print(f"({node.long_name}, {tag}, {curr_sigma_num})")
-            new_node = (label, tag, curr_sigma_num)
-            sppf.add_node(new_node, node.long_name, "symbol")
-            
-            # only one incoming edge from B*
-            for src_label in node.incoming_edges:
-                call_label = self.map_return_to_call[label]
-                # need to find <src_label, k> in current sigma set, need to find k
-                for sigma_elem in sigma_sets[curr_sigma_num]:
-                    if src_label == sigma_elem[0] and sigma_elem not in processed:
-                        src_tag = sigma_elem[1]
-                        if (call_label, tag) in sigma_sets[src_tag]:
-
-                            # Check processed??
-                            symbol_node = self.get_sppf(sigma_sets, sigma_end_to_call, sigma_elem, curr_sigma_num, sppf, processed)
-                            sppf.add_edge(new_node, symbol_node)
-
-            return new_node                       
-
-
-
-
-        elif node.type == "production" and self.is_node_one_before_start(node):
-            # one terminal before start of produciton: EX A->a*B
-            print(f" one terminal before start ({node.long_name}, {tag}, {curr_sigma_num})")
-
-            new_node = (label, tag, curr_sigma_num)
-            sppf.add_node(new_node, node.long_name, "intermediate")
-
-            # will only be one incoming edge
-            for src_label, edge_label in node.incoming_edges.items():
-                terminal_node = (edge_label, curr_sigma_num - 1, curr_sigma_num)
-                sppf.add_node(terminal_node, edge_label, "symbol")
-
-                sppf.add_edge(new_node, terminal_node)
-
-            return new_node
         elif node.type == "production" and node.is_return:
             print(f"({node.long_name}, {tag}, {curr_sigma_num})")
             # print(f" reached return node not at start of production case")
