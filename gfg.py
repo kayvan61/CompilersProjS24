@@ -1,5 +1,5 @@
 from expr_lexer import ExprLexer
-from b_lexer import BLexer
+from ab_lexer import ABLexer
 from sppf import Sppf
 import pydot
 import queue
@@ -478,14 +478,19 @@ class GFG:
 
         elif node.type == "production" and self.is_node_one_before_start(node):
             # one terminal before start of produciton: EX A->a*B
-            print(f"({node.long_name}, {tag}, {curr_sigma_num})")
+            print(f" one terminal before start ({node.long_name}, {tag}, {curr_sigma_num})")
+
+            new_node = (label, tag, curr_sigma_num)
+            sppf.add_node(new_node, node.long_name, "symbol")
 
             # will only be one incoming edge
             for src_label, edge_label in node.incoming_edges.items():
-                new_node = (edge_label, curr_sigma_num - 1, curr_sigma_num)
-                sppf.add_node(new_node, edge_label, "symbol")
+                terminal_node = (edge_label, curr_sigma_num - 1, curr_sigma_num)
+                sppf.add_node(terminal_node, edge_label, "symbol")
 
-                return new_node
+                sppf.add_edge(new_node, terminal_node)
+
+            return new_node
         elif node.type == "production" and node.is_return:
             print(f"({node.long_name}, {tag}, {curr_sigma_num})")
             # print(f" reached return node not at start of production case")
@@ -526,7 +531,6 @@ class GFG:
             return new_node
         elif node.type == "production":
             print(f"({node.long_name}, {tag}, {curr_sigma_num})")
-            print("reached end")
 
             new_node = (label, tag, curr_sigma_num)
             sppf.add_node(new_node, node.long_name, "intermediate")
@@ -544,7 +548,7 @@ class GFG:
                 prefix_sigma_elem = (src_label, tag) 
                 if (src_label, tag, curr_sigma_num - 1) not in processed:
                     self.get_sppf(sigma_sets, sigma_end_to_call, prefix_sigma_elem, curr_sigma_num - 1, sppf, processed)
-                    pass
+
 
                 sppf.add_family(new_node, prefix_node, terminal_node)
 
@@ -628,7 +632,7 @@ def print_tree(node, level=0):
 
 if __name__ == "__main__":
     #test_gfg = GFG(ExprLexer())
-    test_gfg = GFG(BLexer())
+    test_gfg = GFG(ABLexer())
 
     # simple expression grammar used in gfg paper examples
     # productions = {
@@ -639,17 +643,26 @@ if __name__ == "__main__":
     #     ]
     # }
 
+    # example 2 grammar in Scott's paper
+    # productions = {
+    #     "S": [["L"]],
+    #     "L": [["b"],
+    #           ["L", "L"]
+    #          ]
+    # }
+
+    # example 3 grammar (modified, no epsilon production) in Scott's paper
     productions = {
-        "S": [["L"]],
-        "L": [["b"],
-              ["L", "L"]    
-        ]
+        "S": [["A", "T"],
+              ["a", "T"]],
+        "A": [["a"]],
+        "T": [["b", "b", "b"]]
     }
 
     test_gfg.build_gfg(productions, "S")
 
     # must have graphvis installed for this to work
-    # test_gfg.graph.write_png("output.png")
+    test_gfg.graph.write_png("output.png")
 
     #data = "7 + 8 + 9"
     # print(f"is {data} in language: {test_gfg.recognize_string(data)}")
@@ -664,7 +677,7 @@ if __name__ == "__main__":
     # print(f"is {data} in language: {test_gfg.recognize_string(data)}")
 
 
-    data = "bbb"
+    data = "abbb"
     print(f"is {data} in language: {test_gfg.recognize_string(data)}")
     # print(f"{data} parse tree:")
     # print_tree(test_gfg.parse_string(data))
