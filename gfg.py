@@ -181,7 +181,7 @@ class GFG:
     
     # implements early recognizer inference rules on page 12 of gfg paper except for scan
     # inference rule which transitions between sigma sets
-    def eclosuer(self, sigma_sets, sigma_end_to_call):
+    def eclosuer(self, sigma_sets, sigma_end_to_call, sigma_end_to_exit):
         label_queue = queue.Queue()
 
         # last sigma_set is set to expand
@@ -245,6 +245,12 @@ class GFG:
                         # propagate the current tag
                         curr_sigma_set.add((dest_label, tag))
                         label_queue.put((dest_label, tag))
+
+                        if node.is_exit:
+                            if (dest_label, tag) in sigma_end_to_exit[sigma_num]:
+                                sigma_end_to_exit[sigma_num][(dest_label, tag)].append(label)
+                            else:
+                                sigma_end_to_exit[sigma_num][(dest_label, tag)] = [label]
         
         # print("curr sigma set", curr_sigma_set)
         # print("curr sigma end to call", sigma_end_to_call[-1])
@@ -264,8 +270,11 @@ class GFG:
         sigma_end_to_call = []
         sigma_end_to_call.append({})
 
+        sigma_end_to_exit = []
+        sigma_end_to_exit.append({})
+
         # find all nodes from S• that can be reached by taking empty string edges (essentially)
-        self.eclosuer(sigma_sets, sigma_end_to_call)
+        self.eclosuer(sigma_sets, sigma_end_to_call, sigma_end_to_exit)
 
         # loop until there are no more input tokens (there is probably a better way to write this)
         while True:
@@ -293,134 +302,13 @@ class GFG:
             # append the next sigma set and map end to call
             sigma_sets.append(next_set)
             sigma_end_to_call.append({})
+            sigma_end_to_exit.append({})
             # eclosuer updates both next_set and the last map in sigma_end_to_call
-            self.eclosuer(sigma_sets, sigma_end_to_call)
+            self.eclosuer(sigma_sets, sigma_end_to_call, sigma_end_to_exit)
         
         # return whether <S•, 0> is in last sigma set 
         return (1, 0) in sigma_sets[-1]
     
-
-    def parse_string(self,data):
-        self.lexer.input(data)
-
-        sigma_sets = []
-        # zeroth sigma set initially contains <•S, 0>
-        # implements the init inference rule
-        sigma_sets.append(set([(0, 0)]))
-        # maps an end node of production to all call nodes that invoked that production
-        # in its corresponding sigma set, used from going from an end node to a return node
-        # in the eclosuer function
-        sigma_end_to_call = []
-        sigma_end_to_call.append({})
-
-        # find all nodes from S• that can be reached by taking empty string edges (essentially)
-        self.eclosuer(sigma_sets, sigma_end_to_call)
-
-        # loop until there are no more input tokens (there is probably a better way to write this)
-        while True:
-            # get next token in the input
-            tok = self.lexer.token()
-            # check if reached end of input
-            if not tok:
-                break
-
-            # create next sigma set
-            next_set = set()
-
-            # loop through all elements in prev sigma set and see if there is an edge with label tok
-            # this is the scan inference rule for the early recognizer on pg 12 of gfg paper
-            for element in sigma_sets[-1]:
-                node_label, tag = element
-                node = self.nodes[node_label]
-
-                if node.is_scan:
-                    for dest_label, edge_label in node.outgoing_edges.items():
-                        if (edge_label == tok.type):
-                            # propagate current tag to next 
-                            next_set.add((dest_label, tag))
-
-            # append the next sigma set and map end to call
-            sigma_sets.append(next_set)
-            sigma_end_to_call.append({})
-            # eclosuer updates both next_set and the last map in sigma_end_to_call
-            self.eclosuer(sigma_sets, sigma_end_to_call)
-        
-        # return whether <S•, 0> is in last sigma set 
-        if (1, 0) not in sigma_sets[-1]:
-            return False
-        
-        # string is in grammar, traverse backwards through sigma sets to build a parse tree
-
-        # start with <S•, 0> in last sigma set
-        curr_elem = (1, 0)
-        curr_sigma_num = len(sigma_sets) - 1
-        stack = []
-
-        output_stack = []
-
-        while (curr_elem != (0, 0)):
-            label, tag = curr_elem
-
-            node = self.nodes[label]
-            # print(curr_sigma_num, f"Current elemn is ({label}, {tag})", f"\t\tstack is {stack}")
-
-            if node.type == "start":
-                # implements CALL^-1 rule on pg 12
-                curr_elem = stack.pop()
-                output_stack.pop()
-            elif node.type == "end":
-                print(f"({self.nodes[label].long_name}, {tag}, {curr_sigma_num})")
-                # implements EXIT^-1 rule, has non determinism
-                # At A•, go to A->something•, may be multiple possible values
-                for src_label in node.incoming_edges:
-                    if (src_label, tag) in sigma_sets[curr_sigma_num]:
-                        curr_elem = (src_label, tag)
-                        # output name of production, if at A• output A (#TODO CHECK NOT A->something•)
-                        prod_name = self.map_start_to_prod_name[self.map_end_to_start[label]]
-                        # output.append(self.nodes[src_label].long_name)
-
-                        prod_children = []
-                        if len(output_stack) != 0:
-                            # add production as a child to current production
-                            output_stack[-1][1].insert(0, (prod_name, prod_children))
-                        # set this production to the current production
-                        output_stack.append((prod_name, prod_children))
-                        break
-            elif node.is_entry:
-                # implements START^-1 rule on pg 12
-                # node is A->•something, go back to •A
-                # keep same tag
-                # there will only be one incoming edge
-                for src_label in node.incoming_edges:
-                    curr_elem = (src_label, tag)
-            elif node.is_return:
-                # implements END^-1 rule, has non determinism
-                # at A->aB•g, go to B• and add A->a•Bg to stack
-                # there will only be one incoming edge from B•
-                for src_label in node.incoming_edges:
-                    call_label = self.map_return_to_call[label]
-                    # need to find <src_label, k> in current sigma set, need to find k
-                    for sigma_elem in sigma_sets[curr_sigma_num]:
-                        if src_label == sigma_elem[0]:
-                            src_tag = sigma_elem[1]
-                            if (call_label, tag) in sigma_sets[src_tag]:
-                                stack.append((call_label, tag))
-                                curr_elem = (src_label, src_tag)
-                                break
-            else:
-                # incoming edge is a scan edge
-                # implements SCAN^-1 rule on pg 12
-                # go to previous sigma set
-                # there will only be one incoming edge
-                for src_label, edge_label in node.incoming_edges.items():
-                    if edge_label == "":
-                        print ("ERROR EXPECTING SCAN EDGE, got empty edge")
-                        return False
-                    else:
-                        output_stack[-1][1].insert(0, edge_label)
-                        curr_elem = (src_label, tag)
-                        curr_sigma_num -= 1
-
     def is_node_one_before_start(self, node):
         if node.is_entry:
             return False
@@ -430,7 +318,7 @@ class GFG:
             for src_label in node.incoming_edges:
                 return self.nodes[src_label].is_entry
 
-    def get_sppf(self, sigma_sets, curr_elem, curr_sigma_num, sppf):
+    def get_sppf(self, sigma_sets, sigma_end_to_call, sigma_end_to_exit, curr_elem, curr_sigma_num, sppf):
         label, tag = curr_elem
         new_node = (label, tag, curr_sigma_num)
 
@@ -439,21 +327,19 @@ class GFG:
             gfg_node = self.nodes[label]
             
             # case where at A•
+            # implements EXIT^-1
             if gfg_node.type == "end":
                 prod_name = self.map_start_to_prod_name[self.map_end_to_start[label]]
                 print(f"({prod_name}, {tag}, {curr_sigma_num})")
                 new_node = (label, tag, curr_sigma_num)
                 sppf.add_node(new_node, prod_name, "symbol")
 
-                # implements EXIT^-1 rule, has non determinism
-                # At A•, go to A->something•, may be multiple possible values
-                for src_label in gfg_node.incoming_edges:
-                    next_elem = (src_label, tag)
-                    if next_elem in sigma_sets[curr_sigma_num]:
-                            next_node = self.get_sppf(sigma_sets, next_elem, curr_sigma_num, sppf)
-                            sppf.add_edge(new_node, next_node)          
+                for exit_label in sigma_end_to_exit[curr_sigma_num][(label, tag)]:
+                    next_node = self.get_sppf(sigma_sets, sigma_end_to_call, sigma_end_to_exit, (exit_label, tag), curr_sigma_num, sppf)
+                    sppf.add_edge(new_node, next_node)          
 
             # empty production
+            # Implements START^-1
             elif gfg_node.type == "production" and gfg_node.is_entry:
                 assert tag == curr_sigma_num
                 print(f"in empty string case {gfg_node.long_name}")
@@ -469,6 +355,7 @@ class GFG:
 
 
             # At A -> B•c
+            # implements ENTRY_END^-1
             elif gfg_node.type == "production" and self.is_node_one_before_start(gfg_node) and gfg_node.is_return:
                 print(f"({gfg_node.long_name}, {tag}, {curr_sigma_num})")
 
@@ -482,10 +369,11 @@ class GFG:
                         if src_label == sigma_elem[0]:
                             src_tag = sigma_elem[1]
                             if (call_label, tag) in sigma_sets[src_tag]:
-                                symbol_node = self.get_sppf(sigma_sets, sigma_elem, curr_sigma_num, sppf)
+                                symbol_node = self.get_sppf(sigma_sets, sigma_end_to_call, sigma_end_to_exit, sigma_elem, curr_sigma_num, sppf)
                                 sppf.add_edge(new_node, symbol_node)
 
             # At A -> a•c
+            # implements ENTRY_SCAN^-1
             elif gfg_node.type == "production" and self.is_node_one_before_start(gfg_node):
                 # one terminal before start of produciton: EX A->a*B
                 print(f" one terminal before start ({gfg_node.long_name}, {tag}, {curr_sigma_num})")
@@ -500,6 +388,7 @@ class GFG:
                     sppf.add_edge(new_node, terminal_node)
 
             # At A ->aB•c
+            # implements END^-1
             elif gfg_node.type == "production" and gfg_node.is_return:
                 print(f"({gfg_node.long_name}, {tag}, {curr_sigma_num})")
 
@@ -514,12 +403,13 @@ class GFG:
                         if src_label == sigma_elem[0]:
                             src_tag = sigma_elem[1]
                             if (call_label, tag) in sigma_sets[src_tag]:
-                                production_node = self.get_sppf(sigma_sets, sigma_elem, curr_sigma_num, sppf)
-                                prefix_node = self.get_sppf(sigma_sets, (call_label, tag), src_tag, sppf)
+                                production_node = self.get_sppf(sigma_sets, sigma_end_to_call, sigma_end_to_exit, sigma_elem, curr_sigma_num, sppf)
+                                prefix_node = self.get_sppf(sigma_sets, sigma_end_to_call, sigma_end_to_exit, (call_label, tag), src_tag, sppf)
 
                                 sppf.add_family(new_node, prefix_node, production_node)
 
             # At A-> ab•c
+            # implements SCAN^-1
             elif gfg_node.type == "production":
                 print(f"({gfg_node.long_name}, {tag}, {curr_sigma_num})")
 
@@ -532,7 +422,7 @@ class GFG:
 
 
                     prefix_sigma_elem = (src_label, tag) 
-                    prefix_node = self.get_sppf(sigma_sets, prefix_sigma_elem, curr_sigma_num - 1, sppf)
+                    prefix_node = self.get_sppf(sigma_sets, sigma_end_to_call, sigma_end_to_exit, prefix_sigma_elem, curr_sigma_num - 1, sppf)
 
                     sppf.add_family(new_node, prefix_node, terminal_node)
         else:
@@ -556,8 +446,11 @@ class GFG:
         sigma_end_to_call = []
         sigma_end_to_call.append({})
 
+        sigma_end_to_exit = []
+        sigma_end_to_exit.append({})
+
         # find all nodes from S• that can be reached by taking empty string edges (essentially)
-        self.eclosuer(sigma_sets, sigma_end_to_call)
+        self.eclosuer(sigma_sets, sigma_end_to_call, sigma_end_to_exit)
 
         # loop until there are no more input tokens (there is probably a better way to write this)
         while True:
@@ -585,17 +478,19 @@ class GFG:
             # append the next sigma set and map end to call
             sigma_sets.append(next_set)
             sigma_end_to_call.append({})
+            sigma_end_to_exit.append({})
             # eclosuer updates both next_set and the last map in sigma_end_to_call
-            self.eclosuer(sigma_sets, sigma_end_to_call)
+            self.eclosuer(sigma_sets, sigma_end_to_call, sigma_end_to_exit)
         
         # return whether <S•, 0> is in last sigma set 
         if (1, 0) not in sigma_sets[-1]:
             return False
         
         # string is in grammar, traverse backwards through sigma sets to build a parse tree
+        print(sigma_end_to_exit)
 
         sppf = Sppf()
-        self.get_sppf(sigma_sets, (1, 0), len(sigma_sets) - 1, sppf)
+        self.get_sppf(sigma_sets, sigma_end_to_call, sigma_end_to_exit, (1, 0), len(sigma_sets) - 1, sppf)
         return sppf
 
 def print_help(val, level):
@@ -614,7 +509,7 @@ def print_tree(node, level=0):
         print_help(node, level)
 
 if __name__ == "__main__":
-    #test_gfg = GFG(ExprLexer())
+    # test_gfg = GFG(ExprLexer())
     test_gfg = GFG(ABLexer())
 
     # simple expression grammar used in gfg paper examples
@@ -649,7 +544,7 @@ if __name__ == "__main__":
     # must have graphvis installed for this to work
     test_gfg.graph.write_png("output.png")
 
-    #data = "7 + 8 + 9"
+    # data = "7 + 8 + 9"
     # print(f"is {data} in language: {test_gfg.recognize_string(data)}")
     # print(f"{data} parse tree:")
     # print_tree(test_gfg.parse_string(data))
