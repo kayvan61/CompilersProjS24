@@ -6,14 +6,15 @@
 # ------------------------------------------------------------
 import ply.lex as lex
 
-class BLexer(object):
+class ABLexer(object):
     # List of token names.   This is always required
     tokens = [
-       'b',
-       'a'
+        'a',
+        'b'
     ]
 
     # Regular expression rules for simple tokens
+    t_a  = r'[a]'
     t_b  = r'[b]'
     t_a  = r'[a]'
 
@@ -38,9 +39,9 @@ class BLexer(object):
 
 if __name__ == "__main__":
     # Build the lexer and try it out
-    l = BLexer()
+    l = ABLexer()
     l.build()           # Build the lexer
-    l.input("bbb")     # Test it
+    l.input("abbb")     # Test it
 
     while True:
         tok = l.token()

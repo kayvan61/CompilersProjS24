@@ -1,5 +1,5 @@
 from expr_lexer import ExprLexer
-from b_lexer import BLexer
+from ab_lexer import ABLexer
 from sppf import Sppf
 import pydot
 import queue
@@ -621,137 +621,78 @@ class GFG:
                         curr_elem = (src_label, tag)
                         curr_sigma_num -= 1
 
-    def is_node_one_before_start(self, node):
-        if node.is_return:
-            return self.nodes[self.map_return_to_call[node.label]].is_entry
-        else:
-            for src_label in node.incoming_edges:
-                return self.nodes[src_label].is_entry
-
-    def get_sppf(self, sigma_sets, sigma_end_to_call, curr_elem, curr_sigma_num, sppf, processed):
-        assert curr_elem not in processed
+    def get_sppf(self, sigma_sets, curr_elem, curr_sigma_num, sppf):
         label, tag = curr_elem
-        processed.add((label, tag, curr_sigma_num))
-        node = self.nodes[label]
+        new_node = (label, tag, curr_sigma_num)
         
-        if node.type == "end":
-            prod_name = self.map_start_to_prod_name[self.map_end_to_start[label]]
-            print(f"({prod_name}, {tag}, {curr_sigma_num})")
-            new_node = (label, tag, curr_sigma_num)
-            sppf.add_node(new_node, prod_name, "symbol")
+        if new_node not in sppf.nodes:
+            # gfg node that corresponds to with the current label of the current sigma set element
+            gfg_node = self.nodes[label]        
+        
+            # case where at A•
+            if gfg_node.type == "end":
+                prod_name = self.map_start_to_prod_name[self.map_end_to_start[label]]
+                print(f"({prod_name}, {tag}, {curr_sigma_num})")
+                sppf.add_node(new_node, prod_name, "symbol")
 
-            # implements EXIT^-1 rule, has non determinism
-            # At A•, go to A->something•, may be multiple possible values
-            for src_label in node.incoming_edges:
-                next_elem = (src_label, tag)
-                if next_elem in sigma_sets[curr_sigma_num]:
-                    if (src_label, tag, curr_sigma_num) not in processed:
-                        next_node = self.get_sppf(sigma_sets, sigma_end_to_call, next_elem, curr_sigma_num, sppf, processed)
+                # implements EXIT^-1 rule, has non determinism
+                # At A•, go to A->something•, may be multiple possible values
+                for src_label in gfg_node.incoming_edges:
+                    next_elem = (src_label, tag)
+                    if next_elem in sigma_sets[curr_sigma_num]:
+                        next_node = self.get_sppf(sigma_sets, next_elem, curr_sigma_num, sppf)
                         sppf.add_edge(new_node, next_node)
-                    else:
-                        print("in END, already processed")
+
+            elif gfg_node.type == "production" and gfg_node.is_entry:
+                assert tag == curr_sigma_num
+                print(f"in empty string case {gfg_node.long_name}")
+
+                sppf.add_node(new_node, gfg_node.long_name, "intermediate")
+
+                epsilon_node = ("ϵ", 0, 0)
+                sppf.add_node(epsilon_node, "ϵ", "symbol")
+
+                sppf.add_edge(new_node, epsilon_node)
 
 
-            return new_node
-        elif node.type == "production" and self.is_node_one_before_start(node) and node.is_return:
-            print(f"({node.long_name}, {tag}, {curr_sigma_num})")
-            new_node = (label, tag, curr_sigma_num)
-            sppf.add_node(new_node, node.long_name, "symbol")
-            
-            # only one incoming edge from B*
-            for src_label in node.incoming_edges:
-                call_label = self.map_return_to_call[label]
-                # need to find <src_label, k> in current sigma set, need to find k
-                for sigma_elem in sigma_sets[curr_sigma_num]:
-                    if src_label == sigma_elem[0] and sigma_elem not in processed:
-                        src_tag = sigma_elem[1]
-                        if (call_label, tag) in sigma_sets[src_tag]:
+            elif gfg_node.type == "production" and gfg_node.is_return:
+                print(f"({gfg_node.long_name}, {tag}, {curr_sigma_num})")
 
-                            # Check processed??
-                            symbol_node = self.get_sppf(sigma_sets, sigma_end_to_call, sigma_elem, curr_sigma_num, sppf, processed)
-                            sppf.add_edge(new_node, symbol_node)
+                sppf.add_node(new_node, gfg_node.long_name, "intermediate")
 
-            return new_node                       
+                # at A->aB•g, go to B• and add A->a•Bg to stack
+                # there will only be one incoming edge from B•
+                for src_label in gfg_node.incoming_edges:
+                    call_label = self.map_return_to_call[label]
+                    # need to find <src_label, k> in current sigma set, need to find k
+                    for sigma_elem in sigma_sets[curr_sigma_num]:
+                        if src_label == sigma_elem[0]:
+                            src_tag = sigma_elem[1]
+                            if (call_label, tag) in sigma_sets[src_tag]:
+                                production_node = self.get_sppf(sigma_sets, sigma_elem, curr_sigma_num, sppf)
+                                prefix_node = self.get_sppf(sigma_sets, (call_label, tag), src_tag, sppf)
+
+                                sppf.add_family(new_node, prefix_node, production_node)
 
 
 
+            elif gfg_node.type == "production":
+                print(f"({gfg_node.long_name}, {tag}, {curr_sigma_num})")
 
-        elif node.type == "production" and self.is_node_one_before_start(node):
-            # one terminal before start of produciton: EX A->a*B
-            print(f"({node.long_name}, {tag}, {curr_sigma_num})")
+                sppf.add_node(new_node, gfg_node.long_name, "intermediate")
 
-            # will only be one incoming edge
-            for src_label, edge_label in node.incoming_edges.items():
-                new_node = (edge_label, curr_sigma_num - 1, curr_sigma_num)
-                sppf.add_node(new_node, edge_label, "symbol")
+                
+                # will only be one incoming edge
+                for src_label, edge_label in gfg_node.incoming_edges.items():
+                    terminal_node = (edge_label, curr_sigma_num - 1, curr_sigma_num)
+                    sppf.add_node(terminal_node, edge_label, "symbol")
 
-                return new_node
-        elif node.type == "production" and node.is_return:
-            print(f"({node.long_name}, {tag}, {curr_sigma_num})")
-            # print(f" reached return node not at start of production case")
+                    prefix_sigma_elem = (src_label, tag) 
+                    prefix_node = self.get_sppf(sigma_sets, prefix_sigma_elem, curr_sigma_num - 1, sppf)
 
-            new_node = (label, tag, curr_sigma_num)
-            sppf.add_node(new_node, node.long_name, "intermediate")
+                    sppf.add_family(new_node, prefix_node, terminal_node)
 
-            # at A->aB•g, go to B• and add A->a•Bg to stack
-            # there will only be one incoming edge from B•
-            for src_label in node.incoming_edges:
-                call_label = self.map_return_to_call[label]
-                # need to find <src_label, k> in current sigma set, need to find k
-                for sigma_elem in sigma_sets[curr_sigma_num]:
-                    if src_label == sigma_elem[0]:
-                        src_tag = sigma_elem[1]
-                        if (call_label, tag) in sigma_sets[src_tag]:
-                            # print(f"\t{sigma_elem}")
-                            # found "reduction pointer" with label src_tag
-                            # create node for (B, src_tag, curr_sigma_num)
-
-                            production_node = (src_label, src_tag, curr_sigma_num)
-                            #sppf.add_node(production_node, self.nodes[src_label].long_name, "symbol")
-                            if (src_label, src_tag, curr_sigma_num) not in processed:
-                                self.get_sppf(sigma_sets, sigma_end_to_call, sigma_elem, curr_sigma_num, sppf, processed)
-                            else:
-                                print(f"{sigma_elem} already processed in {curr_sigma_num}")
-
-                            prefix_node = (call_label, tag, src_tag)
-                            sppf.add_node(prefix_node, self.nodes[call_label].long_name, "intermediate") # ????????????????????????????????????????
-
-                            if (call_label, tag, src_tag) not in processed:
-                                self.get_sppf(sigma_sets, sigma_end_to_call, (call_label, tag), src_tag, sppf, processed)
-                            else:
-                                print(f"{call_label, tag} prefix already processed in {src_tag}")
-
-                            sppf.add_family(new_node, prefix_node, production_node)
-
-            return new_node
-        elif node.type == "production":
-            print(f"({node.long_name}, {tag}, {curr_sigma_num})")
-            print("reached end")
-
-            new_node = (label, tag, curr_sigma_num)
-            sppf.add_node(new_node, node.long_name, "intermediate")
-
-            
-            # will only be one incoming edge
-            for src_label, edge_label in node.incoming_edges.items():
-                terminal_node = (edge_label, curr_sigma_num - 1, curr_sigma_num)
-                sppf.add_node(terminal_node, edge_label, "symbol")
-
-
-                prefix_node = (src_label, tag, curr_sigma_num - 1)
-                sppf.add_node(prefix_node, self.nodes[src_label].long_name, "intermediate")
-
-                prefix_sigma_elem = (src_label, tag) 
-                if (src_label, tag, curr_sigma_num - 1) not in processed:
-                    self.get_sppf(sigma_sets, sigma_end_to_call, prefix_sigma_elem, curr_sigma_num - 1, sppf, processed)
-                    pass
-
-                sppf.add_family(new_node, prefix_node, terminal_node)
-
-            return new_node
-
-        else:
-            print(f"reached case not covered yet by code, curr_elem = {curr_elem}")
+        return new_node
 
 
                     
@@ -808,7 +749,7 @@ class GFG:
         # string is in grammar, traverse backwards through sigma sets to build a parse tree
 
         sppf = Sppf()
-        self.get_sppf(sigma_sets, sigma_end_to_call, (1, 0), len(sigma_sets) - 1, sppf, set())
+        self.get_sppf(sigma_sets, (1, 0), len(sigma_sets) - 1, sppf)
         return sppf
 
 def print_help(val, level):
@@ -827,27 +768,40 @@ def print_tree(node, level=0):
         print_help(node, level)
 
 if __name__ == "__main__":
-    #test_gfg = GFG(ExprLexer())
-    test_gfg = GFG(BLexer())
+    test_gfg = GFG(ExprLexer())
+    #test_gfg = GFG(ABLexer())
 
     # simple expression grammar used in gfg paper examples
-    # productions = {
-    #     "S": [["E"]],
-    #     "E": [["number"],
-    #           ["E", "plus", "E"],
-    #           ["lparen", "E", "plus", "E", "rparen"]
-    #     ]
-    # }
-
     productions = {
         "S": [["E"]],
-        "E": [["E", "a", "E"], ["b"]]
+        "E": [["number"],
+              ["E", "plus", "E"],
+              ["lparen", "E", "plus", "E", "rparen"]
+        ]
     }
+
+    # example 2 grammar in Scott's paper
+    # productions = {
+    #     "S": [["L"]],
+    #     "L": [["b"],
+    #           ["L", "L"]
+    #          ]
+    # }
+
+    # example 3 grammar in Scott's paper
+    # productions = {
+    #     "S": [["A", "T"],
+    #           ["a", "T"]],
+    #     "A": [["a"],
+    #           ["B", "A"]],
+    #     "B": [[]],
+    #     "T": [["b", "b", "b"]]
+    # }
 
     test_gfg.build_gfg(productions, "S")
 
     # must have graphvis installed for this to work
-    # test_gfg.graph.write_png("output.png")
+    test_gfg.graph.write_png("output.png")
 
     #data = "7 + 8 + 9"
     # print(f"is {data} in language: {test_gfg.recognize_string(data)}")
@@ -861,12 +815,7 @@ if __name__ == "__main__":
     # data = "(7+9"
     # print(f"is {data} in language: {test_gfg.recognize_string(data)}")
 
-
-    data = "babab"
-    # ret = test_gfg.parse_all_trees(data)
-    # ret.graph.write_png("./sppf.png")
-    test_gfg.sppf_forward(data, productions, "S")
-    test_gfg.sppf.graph.write_png("./sppf_forward.png")
+    data = "7+8+9"
     print(f"is {data} in language: {test_gfg.recognize_string(data)}")
     # print(f"{data} parse tree:")
     # print_tree(test_gfg.parse_string(data))
