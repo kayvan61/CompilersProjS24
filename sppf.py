@@ -6,6 +6,7 @@ class SppfNode:
         self.start = node_def[1]
         self.end = node_def[2]
         self.long_name = long_name
+        self.rebuilt = False
         self.type = type # symbol, packed, intermediate
         self.incoming_edges = {}  # Map to store incoming edges (source node: token consumed)
         self.outgoing_edges = {}  # Map to store outgoing edges (destination node: token consumed)
@@ -40,10 +41,15 @@ class Sppf:
         self.rebuild_node(root)
     
     def rebuild_node(self, node):
+        if node.rebuilt:
+            return
+
+        node.rebuilt = True
         if node.type == "packed":
             self.graph.add_node(pydot.Node(node.get_pydot_label(), label="", shape="circle"))
         else:
             self.graph.add_node(pydot.Node(node.get_pydot_label(), shape="circle"))
+            
         for dst,_ in node.outgoing_edges.items():
             self.rebuild_node(self.nodes[dst])
             self.graph.add_edge(pydot.Edge(node.get_pydot_label(), self.nodes[dst].get_pydot_label()))

@@ -16,7 +16,6 @@ class ABLexer(object):
     # Regular expression rules for simple tokens
     t_a  = r'[a]'
     t_b  = r'[b]'
-    t_a  = r'[a]'
 
     # A string containing ignored characters (spaces, tabs and newlines)
     t_ignore  = ' \t\n'
