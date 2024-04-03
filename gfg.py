@@ -391,10 +391,11 @@ class GFG:
                     end_node = next(iter(ele_node.outgoing_edges.keys()))
                     start_node = self.map_end_to_start[end_node]
                     if w == -1:
-                        attempted_node = (self.nodes[start_node], i, i)
-                        self.sppf.add_node(attempted_node, str(start_node), "")
+                        attempted_node = (self.nodes[end_node], i, i)
+                        self.sppf.add_node(attempted_node, str(self.nodes[end_node]), "")
                         epsilon_node = ("ϵ", 0, 0)
                         self.sppf.add_node(epsilon_node, "ϵ", "symbol")
+                        self.sppf.add_edge(attempted_node, epsilon_node)
                         print(f"eps before {sigma_sets[i]}")
                         sigma_sets[i].remove(element)
                         sigma_sets[i].add((element[0], element[1], attempted_node))
@@ -798,7 +799,10 @@ if __name__ == "__main__":
     test_gfg = GFG(ABLexer())
 
     productions = {
-        "S": [["S"], ["b"], []]
+        "S": [["A", "T"], ["a", "T"]],
+        "A": [["a"], ["B", "A"]],
+        "B": [[]],
+        "T": [["b", "b", "b"]]
     }
     
     # simple expression grammar used in gfg paper examples
@@ -845,7 +849,7 @@ if __name__ == "__main__":
     # data = "(7+9"
     # print(f"is {data} in language: {test_gfg.recognize_string(data)}")
 
-    data = "b"
+    data = "abbb"
     print(f"is {data} in language: {test_gfg.recognize_string(data)}")
     # print(f"{data} parse tree:")
     # print_tree(test_gfg.parse_string(data))
