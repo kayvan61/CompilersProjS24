@@ -335,7 +335,7 @@ class GFG:
             scan_child, scan_tok = next(iter(self.nodes[entry_child].outgoing_edges.items()))
             if self.nodes[entry_child].is_scan or (self.nodes[entry_child].is_entry and self.nodes[entry_child].is_exit):
                 if scan_tok == in_tok or (self.nodes[entry_child].is_entry and self.nodes[entry_child].is_exit):
-                    sigma_sets[0].add((entry_child, 0, -1))
+                    Q_p.add((entry_child, 0, -1))
         v = -1
 
         for i in range(len(data)+1): 
