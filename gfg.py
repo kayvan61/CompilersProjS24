@@ -340,7 +340,7 @@ class GFG:
 
         for i in range(len(data)+1): 
             R = sigma_sets[i].copy()
-            H = set() # when we hit the end of a production, we need to backtrack to the caller. (Start node, sppf node)
+            H = {} # when we hit the end of a production, we need to backtrack to the caller. (Start node, sppf node)
             Q = Q_p
             Q_p = set()
 
@@ -363,6 +363,9 @@ class GFG:
                     print(f"found call {ele_node}")
                     start_label = next(iter(ele_node.outgoing_edges.keys()))
                     start_node = self.nodes[start_label]
+                    if start_label in H.keys():
+                        print("in h!!!!!!")
+                        exit()
                     for child, tok in start_node.outgoing_edges.items():
                         e_item = (child, i, -1)
                         if (self.nodes[child].is_entry and self.nodes[child].is_exit):
@@ -402,8 +405,8 @@ class GFG:
                         w = attempted_node
                         print(f"eps after {sigma_sets[i]}")
                     if h == i:
-                        print("add to H")
-                        H.add((self.map_end_to_start[end_node], w))
+                        print(f"add to H {self.nodes[start_node]}")
+                        H[start_node] = w
                     again = True
                     while again:
                         temp_sigma = sigma_sets[h].copy()
@@ -477,7 +480,7 @@ class GFG:
         for x in sigma_sets[-1]:
             if self.nodes[x[0]].is_exit:
                 end_node = next(iter(self.nodes[x[0]].outgoing_edges))
-                return x[2]
+                #return x[2]
                 if end_node == 1:
                     print("tree root", x[2])
                     self.sppf.rebuild_with_root(x[2])
