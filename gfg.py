@@ -34,11 +34,13 @@ class Node:
 
 # models a grammar flow graph
 class GFG:
-    def __init__(self, lexer):
+    def __init__(self, lexer, use_pydot=True):
         self.nodes = {}
         # self.lexer.tokens defines the set of terminals
         self.lexer = lexer
         self.lexer.build()
+
+        self.use_pydot = use_pydot
 
         # maps a production name to the start node label for that production
         self.map_prod_name_to_start = {}
@@ -48,12 +50,14 @@ class GFG:
         self.map_call_to_return = {}
         self.map_return_to_call = {}
         # simply used for debugging to visualize the gfg
-        self.graph = pydot.Dot("my_graph", graph_type="digraph", bgcolor="yellow")
+        if self.use_pydot:
+            self.graph = pydot.Dot("my_graph", graph_type="digraph", bgcolor="yellow")
 
     def add_node(self, label, long_name, type):
         self.nodes[label] = Node(label, long_name, type)
         # add node to pydot graph for visualization/debugging only
-        self.graph.add_node(pydot.Node(long_name, shape="circle"))
+        if self.use_pydot:
+            self.graph.add_node(pydot.Node(long_name, shape="circle"))
         return self.nodes[label]
     
     # create the start and end nodes for a given production, curr_label is the next available
@@ -78,8 +82,9 @@ class GFG:
 
         # optional edges in pydot for gfs visualization, scan edges are black, 
         # epsilon edges are red
-        color = "red" if label == "" else "black"
-        self.graph.add_edge(pydot.Edge(src.long_name, dest.long_name, label=label, color=color))
+        if self.use_pydot:
+            color = "red" if label == "" else "black"
+            self.graph.add_edge(pydot.Edge(src.long_name, dest.long_name, label=label, color=color))
         # print(f"\t\t\tcreating edge from {src.long_name} to {dest.long_name} with LABEL: {label}")
 
     # productions is a map string : list(list(str))
@@ -113,7 +118,8 @@ class GFG:
                 is_entry = True
 
                 for term in prod_rhs:
-                    new_node = self.add_node(curr_label, f"[{prefix_label}•{term}]", "production")
+                    long_name = f"[{prefix_label}•{term}]" if self.use_pydot else ""
+                    new_node = self.add_node(curr_label, long_name, "production")
                     curr_label += 1
                     new_node.is_entry = is_entry
                     is_entry = False
@@ -158,7 +164,8 @@ class GFG:
                     prefix_label = prefix_label + f"{term},"
 
                 # reached exit node for current production
-                exit_node = self.add_node(curr_label, f"[{prefix_label}•]", "production")
+                long_name = f"[{prefix_label}•]" if self.use_pydot else ""
+                exit_node = self.add_node(curr_label, long_name, "production")
                 curr_label += 1
 
                 exit_node.is_entry = is_entry # may also be entry node if production is A->epsilon
@@ -529,7 +536,7 @@ class GFG:
             # implements EXIT^-1
             if gfg_node.type == "end":
                 prod_name = self.map_start_to_prod_name[self.map_end_to_start[label]]
-                print(f"({prod_name}, {tag}, {curr_sigma_num})")
+                # print(f"({prod_name}, {tag}, {curr_sigma_num})")
                 new_node = (label, tag, curr_sigma_num)
                 sppf.add_node(new_node, prod_name, "symbol")
 
@@ -542,7 +549,7 @@ class GFG:
             # Implements START^-1
             elif gfg_node.type == "production" and gfg_node.is_entry:
                 assert tag == curr_sigma_num
-                print(f"in empty string case {gfg_node.long_name}")
+                # print(f"in empty string case {gfg_node.long_name}")
 
                 sppf.add_node(new_node, gfg_node.long_name, "intermediate")
 
@@ -557,7 +564,7 @@ class GFG:
             # At A -> B•c
             # implements ENTRY_END^-1
             elif gfg_node.type == "production" and self.is_node_one_before_start(gfg_node) and gfg_node.is_return:
-                print(f"({gfg_node.long_name}, {tag}, {curr_sigma_num})")
+                # print(f"({gfg_node.long_name}, {tag}, {curr_sigma_num})")
 
                 sppf.add_node(new_node, gfg_node.long_name, "symbol")
 
@@ -573,7 +580,7 @@ class GFG:
             # implements ENTRY_SCAN^-1
             elif gfg_node.type == "production" and self.is_node_one_before_start(gfg_node):
                 # one terminal before start of produciton: EX A->a*B
-                print(f" one terminal before start ({gfg_node.long_name}, {tag}, {curr_sigma_num})")
+                # print(f" one terminal before start ({gfg_node.long_name}, {tag}, {curr_sigma_num})")
 
                 sppf.add_node(new_node, gfg_node.long_name, "intermediate")
 
@@ -587,7 +594,7 @@ class GFG:
             # At A ->aB•c
             # implements END^-1
             elif gfg_node.type == "production" and gfg_node.is_return:
-                print(f"({gfg_node.long_name}, {tag}, {curr_sigma_num})")
+                # print(f"({gfg_node.long_name}, {tag}, {curr_sigma_num})")
 
                 sppf.add_node(new_node, gfg_node.long_name, "intermediate")
 
@@ -605,7 +612,7 @@ class GFG:
             # At A-> ab•c
             # implements SCAN^-1
             elif gfg_node.type == "production":
-                print(f"({gfg_node.long_name}, {tag}, {curr_sigma_num})")
+                # print(f"({gfg_node.long_name}, {tag}, {curr_sigma_num})")
 
                 sppf.add_node(new_node, gfg_node.long_name, "intermediate")
 
@@ -620,14 +627,15 @@ class GFG:
 
                     sppf.add_family(new_node, prefix_node, terminal_node)
         else:
-            print(f"already processed {new_node}, {self.nodes[label].long_name}")
+            pass
+            # print(f"already processed {new_node}, {self.nodes[label].long_name}")
 
         return new_node
 
 
                     
 
-    def parse_all_trees(self,data):
+    def parse_all_trees(self, data, use_pydot=True):
         self.lexer.input(data)
 
         # zeroth sigma set initially contains <•S, 0>
@@ -693,7 +701,7 @@ class GFG:
         
         # string is in grammar, traverse backwards through sigma sets to build a parse tree
 
-        sppf = Sppf()
+        sppf = Sppf(use_pydot)
         self.get_sppf(call_sigma_sets, sigma_return_to_end, sigma_end_to_exit, (1, 0), len(sigma_sets) - 1, sppf)
         return sppf
 
@@ -717,21 +725,21 @@ if __name__ == "__main__":
     test_gfg = GFG(ABLexer())
 
     # simple expression grammar used in gfg paper examples
-    productions = {
-        "S": [["E"]],
-        "E": [["number"],
-              ["E", "plus", "E"],
-              ["lparen", "E", "plus", "E", "rparen"]
-        ]
-    }
+    # productions = {
+    #     "S": [["E"]],
+    #     "E": [["number"],
+    #           ["E", "plus", "E"],
+    #           ["lparen", "E", "plus", "E", "rparen"]
+    #     ]
+    # }
 
     # example 2 grammar in Scott's paper
-    # productions = {
-    #     "S": [["L"]],
-    #     "L": [["b"],
-    #           ["L", "L"]
-    #          ]
-    # }
+    productions = {
+        "S": [["L"]],
+        "L": [["b"],
+              ["L", "L"]
+             ]
+    }
 
     # example 3 grammar in Scott's paper
     # productions = {
@@ -743,11 +751,11 @@ if __name__ == "__main__":
     #     "T": [["b", "b", "b"]]
     # }
 
-    productions = {
-        "S": [["A", "b"],
-              ["b", "A"]],
-        "A": [["b", "b"]]
-    }
+    # productions = {
+    #     "S": [["A", "b"],
+    #           ["b", "A"]],
+    #     "A": [["b", "b"]]
+    # }
 
     # productions = {
     #     "S": [["S"],
@@ -757,7 +765,8 @@ if __name__ == "__main__":
     test_gfg.build_gfg(productions, "S")
 
     # must have graphvis installed for this to work
-    # test_gfg.graph.write_png("output.png")
+    if test_gfg.use_pydot:
+        test_gfg.graph.write_png("output.png")
 
     #data = "7 + 8 + 9"
     # print(f"is {data} in language: {test_gfg.recognize_string(data)}")
@@ -772,13 +781,16 @@ if __name__ == "__main__":
     # print(f"is {data} in language: {test_gfg.recognize_string(data)}")
 
 
-    data = "bbb"
+    data = "bb"
     print(f"is {data} in language: {test_gfg.recognize_string(data)}")
-    print(f"{data} parse tree:")
-    res = test_gfg.parse_string(data)
-    # print(res)
-    print_tree(res)
+    
+    
+    # print(f"{data} parse tree:")
+    # res = test_gfg.parse_string(data)
+    # print_tree(res)
 
-    # sppf = test_gfg.parse_all_trees(data)
-    # if sppf is not False:
-    #     sppf.graph.write_png("sppf.png")
+    
+
+    sppf = test_gfg.parse_all_trees(data)
+    if sppf is not False and sppf.use_pydot:
+        sppf.graph.write_png("sppf.png")
