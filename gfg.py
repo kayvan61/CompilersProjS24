@@ -3,6 +3,8 @@ from ab_lexer import ABLexer
 from sppf import Sppf
 import pydot
 import queue
+import random
+from collections import deque
 
 # models a single node if the grammar flow graph
 class Node:
@@ -404,11 +406,13 @@ class GFG:
 
         output_stack = []
 
+        processed = set()
+
         while (curr_elem != (0, 0)):
             label, tag = curr_elem
 
             node = self.nodes[label]
-            # print(curr_sigma_num, f"Current elemn is ({label}, {tag})", f"\t\tstack is {stack}")
+            # print(curr_sigma_num, f"Current elemn is ({self.nodes[label].long_name}, {tag}, {curr_sigma_num})")
 
             if node.type == "start":
                 # implements CALL^-1 rule on pg 12
@@ -418,20 +422,43 @@ class GFG:
                 # print(f"({self.nodes[label].long_name}, {tag}, {curr_sigma_num})")
                 # implements EXIT^-1 rule, has non determinism
                 # At A•, go to A->something•, may be multiple possible values
-                for src_label in node.incoming_edges:
-                    if (src_label, tag) in sigma_sets[curr_sigma_num]:
-                        curr_elem = (src_label, tag)
-                        # output name of production, if at A• output A (#TODO CHECK NOT A->something•)
-                        prod_name = self.map_start_to_prod_name[self.map_end_to_start[label]]
-                        # output.append(self.nodes[src_label].long_name)
 
-                        prod_children = []
-                        if len(output_stack) != 0:
-                            # add production as a child to current production
-                            output_stack[-1][1].insert(0, (prod_name, prod_children))
-                        # set this production to the current production
-                        output_stack.append((prod_name, prod_children))
-                        break
+                # OLD INEFFICIENT CODE
+                # for src_label in node.incoming_edges:
+                #     if (src_label, tag) in sigma_sets[curr_sigma_num]:
+                #         curr_elem = (src_label, tag)
+
+                #         prod_name = self.map_start_to_prod_name[self.map_end_to_start[label]]
+
+                #         prod_children = []
+                #         if len(output_stack) != 0:
+                #             # add production as a child to current production
+                #             output_stack[-1][1].insert(0, (prod_name, prod_children)) 
+                #         # set this production to the current production
+                #         output_stack.append((prod_name, prod_children))
+                #         break
+
+                if (label, tag, curr_sigma_num) in processed:
+                    # already processed end label, randomize list of productions that produced end node
+                    # to get out of cycle
+                    sigma_end_to_exit[curr_sigma_num][(label, tag)] = list(sigma_end_to_exit[curr_sigma_num][(label, tag)])
+                    random.shuffle(sigma_end_to_exit[curr_sigma_num][(label, tag)])
+                else:
+                    processed.add((label, tag, curr_sigma_num))
+
+                for exit_label in sigma_end_to_exit[curr_sigma_num][(label, tag)]:
+                    curr_elem = (exit_label, tag)
+
+                    prod_name = self.map_start_to_prod_name[self.map_end_to_start[label]]
+
+                    prod_children = deque([])
+                    if len(output_stack) != 0:
+                        # add production as a child to current production
+                        output_stack[-1][1].appendleft((prod_name, prod_children))
+                    # set this production to the current production
+                    output_stack.append((prod_name, prod_children))
+                    break
+
             elif node.is_entry:
                 # implements START^-1 rule on pg 12
                 # node is A->•something, go back to •A
@@ -442,17 +469,28 @@ class GFG:
             elif node.is_return:
                 # implements END^-1 rule, has non determinism
                 # at A->aB•g, go to B• and add A->a•Bg to stack
+                
+
+                call_label = self.map_return_to_call[label]
+
                 # there will only be one incoming edge from B•
-                for src_label in node.incoming_edges:
-                    call_label = self.map_return_to_call[label]
-                    # need to find <src_label, k> in current sigma set, need to find k
-                    for sigma_elem in sigma_sets[curr_sigma_num]:
-                        if src_label == sigma_elem[0]:
-                            src_tag = sigma_elem[1]
-                            if (call_label, tag) in sigma_sets[src_tag]:
-                                stack.append((call_label, tag))
-                                curr_elem = (src_label, src_tag)
-                                break
+                # OLD inefficient code but pretty sure correct
+                # for src_label in node.incoming_edges:
+                #     # need to find <src_label, k> in current sigma set, need to find k
+                #     for sigma_elem in sigma_sets[curr_sigma_num]:
+                #         if src_label == sigma_elem[0]:
+                #             src_tag = sigma_elem[1]
+                #             if (call_label, tag) in sigma_sets[src_tag]:
+                #                 stack.append((call_label, tag))
+                #                 curr_elem = (src_label, src_tag)
+                #                 break
+
+                end_labels = sigma_return_to_end[curr_sigma_num][curr_elem]
+                for src_label, src_tag in end_labels:
+                    if (call_label, tag) in sigma_sets[src_tag]:
+                        stack.append((call_label, tag))
+                        curr_elem = (src_label, src_tag)
+                        break
             else:
                 # incoming edge is a scan edge
                 # implements SCAN^-1 rule on pg 12
@@ -463,7 +501,7 @@ class GFG:
                         print ("ERROR EXPECTING SCAN EDGE, got empty edge")
                         return False
                     else:
-                        output_stack[-1][1].insert(0, edge_label)
+                        output_stack[-1][1].appendleft(edge_label)
                         curr_elem = (src_label, tag)
                         curr_sigma_num -= 1
 
@@ -688,12 +726,12 @@ if __name__ == "__main__":
     }
 
     # example 2 grammar in Scott's paper
-    productions = {
-        "S": [["L"]],
-        "L": [["b"],
-              ["L", "L"]
-             ]
-    }
+    # productions = {
+    #     "S": [["L"]],
+    #     "L": [["b"],
+    #           ["L", "L"]
+    #          ]
+    # }
 
     # example 3 grammar in Scott's paper
     # productions = {
@@ -705,11 +743,11 @@ if __name__ == "__main__":
     #     "T": [["b", "b", "b"]]
     # }
 
-    # productions = {
-    #     "S": [["A", "b"],
-    #           ["b", "A"]],
-    #     "A": [["b", "b"]]
-    # }
+    productions = {
+        "S": [["A", "b"],
+              ["b", "A"]],
+        "A": [["b", "b"]]
+    }
 
     # productions = {
     #     "S": [["S"],
