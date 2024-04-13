@@ -6,6 +6,7 @@ from gfg import GFG
 from expr_lexer import ExprLexer
 from ab_lexer import ABLexer
 from lark import Lark
+from sparkparser import BParser
 import os
 
 import argparse
@@ -86,8 +87,8 @@ def get_b_grammar_parsers():
     gfg = GFG(ABLexer(), use_pydot=False)
     gfg.build_gfg(grammar, "S")
 
-    res.append((gfg.parse_all_trees, "gfg_top_down_sppf"))
-    res.append((gfg.parse_string, "gfg_single_tree"))
+    # res.append((gfg.parse_all_trees, "gfg_top_down_sppf"))
+    # res.append((gfg.parse_string, "gfg_single_tree"))
 
     grammar = '''
     start: s
@@ -98,11 +99,12 @@ def get_b_grammar_parsers():
     '''
 
     lark_earley_sppf = Lark(grammar, parser='earley', ambiguity="forest", ordered_sets=False)
-    res.append((lark_earley_sppf.parse, "lark_earley_sppf"))
+    # res.append((lark_earley_sppf.parse, "lark_earley_sppf"))
     
     lark_cyk_single = Lark(grammar, parser='cyk', ordered_sets=False)
-    res.append((lark_cyk_single.parse, "lark_cyk_single"))
+    # res.append((lark_cyk_single.parse, "lark_cyk_single"))
 
+    res.append((BParser().scan_and_parse, "spark_earley_single"))
 
     return res
 

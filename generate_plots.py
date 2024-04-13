@@ -4,14 +4,16 @@ gfg_single_tree = "gfg_single_tree"
 gfg_top_down_sppf = "gfg_top_down_sppf"
 lark_earley_sppf = "lark_earley_sppf"
 lark_cyk_single = "lark_cyk_single"
+spark_earley_single = "spark_earley_single"
 
-line_colors =['#FF6347', '#7B68EE', '#32CD32', '#FFD700']
+line_colors =['red', 'blue', 'green', 'orange', "purple"]
 
 map_alg_to_color = {
     gfg_single_tree: line_colors[0],
     gfg_top_down_sppf: line_colors[1],
     lark_earley_sppf: line_colors[2],
-    lark_cyk_single: line_colors[3]
+    lark_cyk_single: line_colors[3],
+    spark_earley_single: line_colors[4]
 }
 
 def read_benchmark_results_from_file(input_file):
@@ -70,5 +72,5 @@ def generate_time_plot(grammar_name, parser_algorithms):
 if __name__ == "__main__":
     
 
-    generate_time_plot("b_grammar", [gfg_single_tree, gfg_top_down_sppf, lark_earley_sppf, lark_cyk_single])
-    generate_mem_usage_plot("b_grammar", [gfg_single_tree, gfg_top_down_sppf, lark_earley_sppf, lark_cyk_single])
+    generate_time_plot("b_grammar", [gfg_single_tree, gfg_top_down_sppf, lark_earley_sppf, lark_cyk_single, spark_earley_single])
+    generate_mem_usage_plot("b_grammar", [gfg_single_tree, gfg_top_down_sppf, lark_earley_sppf, lark_cyk_single, spark_earley_single])
