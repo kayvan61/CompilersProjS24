@@ -1,13 +1,14 @@
 import pydot
 
 class SppfNode:
-    def __init__(self, node_def, long_name, type):
+    def __init__(self, node_def, long_name, type, use_pydot):
         self.label = node_def[0]
         self.start = node_def[1]
         self.end = node_def[2]
-        self.long_name = long_name
-        self.type = type # symbol, packed, intermediate
-        self.incoming_edges = {}  # Map to store incoming edges (source node: token consumed)
+        if use_pydot:
+            self.long_name = long_name
+            self.type = type # symbol, packed, intermediate
+        # self.incoming_edges = {}  # Map to store incoming edges (source node: token consumed)
         self.outgoing_edges = {}  # Map to store outgoing edges (destination node: token consumed)
 
     def get_pydot_label(self):
@@ -38,7 +39,7 @@ class Sppf:
 
     def add_node(self, node_def, long_name, type):
         if node_def not in self.nodes:
-            node = SppfNode(node_def, long_name, type)
+            node = SppfNode(node_def, long_name, type, self.use_pydot)
             self.nodes[node_def] = node
             if self.use_pydot:
                 if type == "packed":
@@ -53,7 +54,7 @@ class Sppf:
         dest_node = self.nodes[dest]
 
         src_node.outgoing_edges[dest] = ""
-        dest_node.incoming_edges[src] = ""
+        # dest_node.incoming_edges[src] = ""
 
         # optional edges in pydot for gfs visualization, scan edges are black, 
         # epsilon edges are red

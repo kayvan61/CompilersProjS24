@@ -701,7 +701,7 @@ class GFG:
         
         # string is in grammar, traverse backwards through sigma sets to build a parse tree
 
-        sppf = Sppf(use_pydot)
+        sppf = Sppf(use_pydot and self.use_pydot)
         self.get_sppf(call_sigma_sets, sigma_return_to_end, sigma_end_to_exit, (1, 0), len(sigma_sets) - 1, sppf)
         return sppf
 
@@ -781,7 +781,7 @@ if __name__ == "__main__":
     # print(f"is {data} in language: {test_gfg.recognize_string(data)}")
 
 
-    data = "bb"
+    data = "bbb"
     print(f"is {data} in language: {test_gfg.recognize_string(data)}")
     
     
