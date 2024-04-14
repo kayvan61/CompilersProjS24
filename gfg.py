@@ -348,9 +348,13 @@ class GFG:
                 # scan nodes should be added to Q
                 if self.nodes[cur_node_idx].is_scan and self.nodes[cur_node_idx].is_entry:
                     for target, token in self.nodes[cur_node_idx].outgoing_edges.items():
-                        if self.nodes[cur_node_idx].is_entry:
-                            print(f"adding to Q: ({self.nodes[cur_node_idx]}, {i}, {-1})")
-                            Q.add((cur_node_idx, i, -1))
+                        print(f"adding to Q: ({self.nodes[cur_node_idx]}, {i}, {-1})")
+                        Q.add((cur_node_idx, i, -1))
+                
+                if self.nodes[cur_node_idx].is_scan and self.nodes[cur_node_idx].is_return:
+                    for target, token in self.nodes[cur_node_idx].outgoing_edges.items():
+                        print(f"adding to Q: ({self.nodes[cur_node_idx]}, {i}, {-1})")
+                        Q.add((cur_node_idx, cur_node_tag, cur_node_sppf))
                 
                 # exit from an epsilon
                 if self.nodes[cur_node_idx].is_exit and cur_node_sppf == -1:
@@ -384,7 +388,7 @@ class GFG:
                             sigma_sets[i].add(e_item)                    
 
                 # end nodes need to return properly
-                if self.nodes[cur_node_idx].type == "end" and cur_node_sppf != -1:
+                if self.nodes[cur_node_idx].type == "end":
                     print("found an end node")
                     # find the person that called the thing we ended
                     start_node = self.map_end_to_start[cur_node_idx]
@@ -408,9 +412,6 @@ class GFG:
                                     else:
                                         R.add(new_item)
                                         new_sigma_items.add(new_item)
-                                if self.nodes[ret_node].is_scan:
-                                    print(f"adding to Q after ret: ({self.nodes[ret_node]}, {caller_node_tag}, {-1})")
-                                    Q.add(new_item)
                     for x in new_sigma_items:
                         sigma_sets[i].add(x) 
             

@@ -1,0 +1,51 @@
+INIT:
+make terminal node T_i = (string[i], i, i+1) for all tokens in string
+add <.S, 0, null> to sigma_set[0]
+
+Call Rule:
+if <A -> x.y, h, w> in sigma_set[i] and A -> x.y is a call node in GFG 
+then add <.B, i, null> to sigma_set[i]
+
+Entry Scan Rule:
+if <A -> .xy, h, w> in sigma_set[i] and x is terminal
+then add <A -> .xy, i, null> to Q[i]
+
+Return Scan Rule:
+if <A -> B.xy, h, w> in sigma_set[i] and x is terminal
+then add <A -> B.xy, h, w> to Q[i]
+
+Exit epsilon:
+if <A -> x., h, w> in sigma_set[i] and w == -1
+then  
+	new_node = create SPPF_node(Node, i, i) with child SPPF_node(epsilon)
+	remove <Node, h, w> from sigma_set[i]
+	add <Node, h, new_node>
+
+Exit normal: 
+if <A -> x., h, w> in sigma_set[i] and w != -1
+then 
+	new_node = create SPPF_node(A., h, i) with child h
+    add (A., h, new_node) to sigma_set[i]
+
+Start:
+if <.A, h, w> in sigma_set[i]
+then
+	add <A -> .x, i, -1> to sigma_set[i] for all prods A -> .x
+
+End:
+if <A., h, w> in sigma_set[i] and <B -> x.Ay, k, v> in sigma_set[h]
+then
+	new_node = create SPPF_node(B -> xA.y) with children (w, v)
+	add <B -> xA.y, k, new_node> to sigma_set[i]
+
+Scan forward	
+if <A -> x.yz, h, w> in Q[i] and y = input[i] and z is either sentinel or A -> xy.z is a call
+then
+	new_node = create SPPF_node(A -> xy.z, h, i+1) with children (T_i, w)
+	add <A -> xy.z, h, new_node> to sigma_set[i+1]
+
+Scan next
+if <A -> x.ybz, h, w> in Q[i] and y = input[i] and b = input[i+1]
+then
+	add <A -> xy.z, h, new_node> to Q[i+1]
+	
