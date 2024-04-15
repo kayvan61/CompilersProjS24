@@ -187,7 +187,7 @@ class GFG:
         # print(self.map_call_to_return)
         # print(self.map_return_to_call)        
                         
-    
+
     # implements early recognizer inference rules on page 12 of gfg paper except for scan
     # inference rule which transitions between sigma sets
     def eclosuer(self, sigma_sets, call_sigma_sets, sigma_end_to_call, sigma_end_to_exit, sigma_return_to_end):
@@ -524,6 +524,7 @@ class GFG:
             for src_label in node.incoming_edges:
                 return self.nodes[src_label].is_entry
 
+    # @profile
     def get_sppf(self, sigma_sets, sigma_return_to_end, sigma_end_to_exit, curr_elem, curr_sigma_num, sppf):
         label, tag = curr_elem
         new_node = (label, tag, curr_sigma_num)
@@ -632,6 +633,7 @@ class GFG:
 
         return new_node
 
+    
     def parse_top_down(self, data, use_pydot=True):
         self.lexer.input(data)
 
@@ -684,7 +686,7 @@ class GFG:
 
             # append the next sigma set and map end to call
             sigma_sets.append(next_set)
-            sigma_sets[-2] = []
+            sigma_sets[-2] = None
             call_sigma_sets.append(next_call_set)
             sigma_end_to_call.append({})
             sigma_end_to_exit.append({})
@@ -719,7 +721,7 @@ def print_tree(node, level=0):
 
 if __name__ == "__main__":
     # test_gfg = GFG(ExprLexer())
-    test_gfg = GFG(ABLexer())
+    test_gfg = GFG(ABLexer(), use_pydot=True)
 
     # simple expression grammar used in gfg paper examples
     # productions = {
@@ -778,8 +780,8 @@ if __name__ == "__main__":
     # print(f"is {data} in language: {test_gfg.recognize_string(data)}")
 
 
-    data = "bbbbbbbbbbbbbbbbbbbbbbb"
-    print(f"is {data} in language: {test_gfg.recognize_string(data)}")
+    data = "bbb"
+    # print(f"is {data} in language: {test_gfg.recognize_string(data)}")
     
     
     # print(f"{data} parse tree:")
@@ -788,5 +790,5 @@ if __name__ == "__main__":
 
     
     sppf = test_gfg.parse_top_down(data)
-    # if sppf is not False and sppf.use_pydot:
-    #     sppf.graph.write_png("sppf.png")
+    if sppf is not False and sppf.use_pydot:
+        sppf.graph.write_png("sppf.png")

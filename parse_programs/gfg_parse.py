@@ -32,6 +32,7 @@ lexers = {
     "b_grammar": ABLexer()
 }
 
+# @profile
 def main(input_string, grammar, lexer, args):
     start_time = time.time()
     
@@ -41,7 +42,8 @@ def main(input_string, grammar, lexer, args):
     if args.single:
         gfg.parse_string(input_string)
     elif args.topdown:
-        gfg.parse_top_down(input_string)
+        res = gfg.parse_top_down(input_string)
+        del res
     elif args.bottomup:
         pass
 

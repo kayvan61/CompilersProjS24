@@ -12,6 +12,7 @@ grammars = {
                  '''
 }
 
+# @profile
 def main(input_string, grammar, args):    
     parser = None
 
