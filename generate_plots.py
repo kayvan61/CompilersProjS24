@@ -13,7 +13,7 @@ map_alg_to_color = {
     gfg_top_down_sppf: line_colors[1],
     lark_earley_sppf: line_colors[2],
     lark_cyk_single: line_colors[3],
-    spark_earley_single: line_colors[4]
+    spark_earley_single: line_colors[4],
 }
 
 def read_benchmark_results_from_file(input_file):
@@ -46,7 +46,7 @@ def generate_mem_usage_plot(grammar_name, parser_algorithms):
     plt.legend()
     plt.grid(True)
 
-    plt.savefig(f"./plots/mem-{'-'.join(parser_algorithms)}.png")
+    plt.savefig(f"./plots/mem-{grammar_name}-{'-'.join(parser_algorithms)}.png")
     plt.clf()
 
 def generate_time_plot(grammar_name, parser_algorithms):
@@ -64,7 +64,7 @@ def generate_time_plot(grammar_name, parser_algorithms):
     plt.legend()
     plt.grid(True)
 
-    plt.savefig(f"./plots/time-{'-'.join(parser_algorithms)}.png")
+    plt.savefig(f"./plots/time-{grammar_name}-{'-'.join(parser_algorithms)}.png")
     plt.clf()
 
 

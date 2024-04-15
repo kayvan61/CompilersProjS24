@@ -632,10 +632,7 @@ class GFG:
 
         return new_node
 
-
-                    
-
-    def parse_all_trees(self, data, use_pydot=True):
+    def parse_top_down(self, data, use_pydot=True):
         self.lexer.input(data)
 
         # zeroth sigma set initially contains <•S, 0>
@@ -781,7 +778,7 @@ if __name__ == "__main__":
     # print(f"is {data} in language: {test_gfg.recognize_string(data)}")
 
 
-    data = "bbb"
+    data = "bbbbbbbbbbbbbbbbbbbbbbb"
     print(f"is {data} in language: {test_gfg.recognize_string(data)}")
     
     
@@ -790,7 +787,6 @@ if __name__ == "__main__":
     # print_tree(res)
 
     
-
-    sppf = test_gfg.parse_all_trees(data)
-    if sppf is not False and sppf.use_pydot:
-        sppf.graph.write_png("sppf.png")
+    sppf = test_gfg.parse_top_down(data)
+    # if sppf is not False and sppf.use_pydot:
+    #     sppf.graph.write_png("sppf.png")

@@ -47,7 +47,8 @@ class Sppf:
                 else :
                     self.graph.add_node(pydot.Node(node.get_pydot_label(), shape="circle"))
         else:
-            print(f"Node: {node_def} already exists in graph")
+            pass
+            # print(f"Node: {node_def} already exists in graph")
 
     def add_edge(self, src, dest):
         src_node = self.nodes[src]
