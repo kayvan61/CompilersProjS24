@@ -1,6 +1,7 @@
 from expr_lexer import ExprLexer
 from ab_lexer import ABLexer
 from sppf import Sppf
+from old_sppf import Sppf_Old
 import pydot
 import queue
 import random
@@ -357,7 +358,7 @@ class GFG:
         self.lexer.input(data)
         sigma_sets = [set() for x in range(len(data) + 1)]
         self.family_map = {}
-        sppf = Sppf() 
+        sppf = Sppf_Old() 
 
         Q_p = set()
         R = set()
