@@ -45,7 +45,7 @@ def main(input_string, grammar, lexer, args):
         res = gfg.parse_top_down(input_string)
         del res
     elif args.bottomup:
-        pass
+        gfg.sppf_forward_inference(input_string)
 
     end_time = time.time()
 

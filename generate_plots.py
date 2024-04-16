@@ -5,8 +5,9 @@ gfg_top_down_sppf = "gfg_top_down_sppf"
 lark_earley_sppf = "lark_earley_sppf"
 lark_cyk_single = "lark_cyk_single"
 spark_earley_single = "spark_earley_single"
+gfg_bottom_up_sppf = "gfg_bottom_up_sppf"
 
-line_colors =['red', 'blue', 'green', 'orange', "purple"]
+line_colors =['red', 'blue', 'green', 'orange', "purple", 'yellow']
 
 map_alg_to_color = {
     gfg_single_tree: line_colors[0],
@@ -14,6 +15,7 @@ map_alg_to_color = {
     lark_earley_sppf: line_colors[2],
     lark_cyk_single: line_colors[3],
     spark_earley_single: line_colors[4],
+    gfg_bottom_up_sppf: line_colors[5],
 }
 
 def read_benchmark_results_from_file(input_file):

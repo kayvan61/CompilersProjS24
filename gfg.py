@@ -523,7 +523,7 @@ class GFG:
         self.lexer.input(data)
         sigma_sets = [set() for x in range(len(data) + 1)]
         self.family_map = {}
-        sppf = Sppf()
+        sppf = Sppf_Old()
 
         Q_p = set() # scan forward elements 
         R = set() # set of items that need to be processed to add to cur sigma

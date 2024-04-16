@@ -18,7 +18,7 @@ def run_benchmark(parser, string, num_repeat):
 
         # Wait for the process to finish and get the output
         stdout, _ = process.communicate()
-        out = stdout.decode()
+        out = stdout.decode().split()[-1]
         times.append(float(out))
 
     avg_time = sum(times) / num_repeat
@@ -106,6 +106,7 @@ def get_b_grammar_parsers():
     res = []
 
     res.append((['python3', './parse_programs/gfg_parse.py', '--topdown', '--input', ''], "gfg_top_down_sppf"))
+    res.append((['python3', './parse_programs/gfg_parse.py', '--bottomup', '--input', ''], "gfg_bottom_up_sppf"))
     res.append((['python3', './parse_programs/gfg_parse.py', '--single', '--input', ''], "gfg_single_tree"))
     res.append((['python3', './parse_programs/lark_parse.py', '--earley', '--input', ''], "lark_earley_sppf"))
     res.append((['python3', './parse_programs/lark_parse.py', '--cyk', '--input', ''], "lark_cyk_single"))
