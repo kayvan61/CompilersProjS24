@@ -9,7 +9,7 @@ from pprint import pprint
 
 # models a single node if the grammar flow graph
 class Node:
-    def __init__(self, label, long_name, type, non_term):
+    def __init__(self, label, long_name, type, non_term=""):
         self.label = label
         self.long_name = long_name
         self.type = type
@@ -60,7 +60,7 @@ class GFG:
         self.nodes[label] = Node(label, long_name, type)
         # add node to pydot graph for visualization/debugging only
         if self.use_pydot:
-            self.graph.add_node(pydot.Node(long_name, shape="circle"), non_term)
+            self.graph.add_node(pydot.Node(long_name, shape="circle"))
         return self.nodes[label]
     
     # create the start and end nodes for a given production, curr_label is the next available
@@ -1137,7 +1137,7 @@ if __name__ == "__main__":
     }
     
     # test_gfg = GFG(ExprLexer())
-    test_gfg = GFG(ABLexer(), use_pydot=False)
+    test_gfg = GFG(ABLexer(), use_pydot=True)
 
     # simple expression grammar used in gfg paper examples
     # productions = {
@@ -1202,8 +1202,8 @@ if __name__ == "__main__":
 
     # sppf = test_gfg.parse_all_trees(data)
     # sppf.graph.write_png("sppf.png")
-    ret = test_gfg.parse_all_trees(data)
+    ret = test_gfg.parse_top_down(data)
     ret.graph.write_png("sppf.png")
-    f_sppf = test_gfg.sppf_forward_inference(data)
+    #f_sppf = test_gfg.sppf_forward_inference(data)
     #f_sppf = test_gfg.sppf_forward(data)
-    f_sppf.graph.write_png("sppf_forward.png")
+    #f_sppf.graph.write_png("sppf_forward.png")
