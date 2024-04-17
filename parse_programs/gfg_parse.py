@@ -25,11 +25,17 @@ grammars = {
         "L": [["b"],
               ["L", "L"]
              ]
+    },
+    "a_grammar": {
+        "S": [["A"]],
+        "A": [["A", "a"],
+              ["a"]]
     }
 }
 
 lexers = {
-    "b_grammar": ABLexer()
+    "b_grammar": ABLexer(),
+    "a_grammar": ABLexer()
 }
 
 # @profile

@@ -4,11 +4,16 @@ from lark import Lark
 
 grammars = {
     "b_grammar": '''
-                 start: s
-                 s: l
+                 start: l
                  l: l l | B
 
                  B: "b"
+                 ''',
+    "a_grammar": '''
+                 start: a
+                 a : a A | A
+
+                 A: "a"
                  '''
 }
 

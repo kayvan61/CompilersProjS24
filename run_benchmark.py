@@ -1,5 +1,5 @@
 import psutil
-from sparkparser import BParser
+from parse_programs.SparkParsers.sparkparser import BParser
 import os
 import subprocess
 import argparse
@@ -7,7 +7,7 @@ import argparse
 def run_benchmark(parser, string, num_repeat):
     parser[-1] = string
 
-    print("running: ", parser)
+    print(len(string))
 
     times = []
     
@@ -105,14 +105,34 @@ def old_get_b_grammar_parsers():
 def get_b_grammar_parsers():
     res = []
 
-    res.append((['python3', './parse_programs/gfg_parse.py', '--topdown', '--input', ''], "gfg_top_down_sppf"))
+    # res.append((['python3', './parse_programs/gfg_parse.py', '--topdown', '--input', ''], "gfg_top_down_sppf"))
     res.append((['python3', './parse_programs/gfg_parse.py', '--bottomup', '--input', ''], "gfg_bottom_up_sppf"))
-    res.append((['python3', './parse_programs/gfg_parse.py', '--single', '--input', ''], "gfg_single_tree"))
-    res.append((['python3', './parse_programs/lark_parse.py', '--earley', '--input', ''], "lark_earley_sppf"))
-    res.append((['python3', './parse_programs/lark_parse.py', '--cyk', '--input', ''], "lark_cyk_single"))
-    res.append((['python3', './parse_programs/spark_parse.py', '--input', ''], "spark_earley_single"))
+    # res.append((['python3', './parse_programs/gfg_parse.py', '--single', '--input', ''], "gfg_single_tree"))
+    # res.append((['python3', './parse_programs/lark_parse.py', '--earley', '--input', ''], "lark_earley_sppf"))
+    # res.append((['python3', './parse_programs/lark_parse.py', '--cyk', '--input', ''], "lark_cyk_single"))
+    # res.append((['python3', './parse_programs/spark_parse.py', '--input', ''], "spark_earley_single"))
 
     return res
+
+def generate_a_strings():
+    count = 1
+    while True:
+        yield 'a' * count
+        count += 20
+
+
+def get_a_grammar_parsers():
+    res = []
+
+    res.append((['python3', './parse_programs/gfg_parse.py', '--grammar', 'a_grammar', '--topdown', '--input', ''], "gfg_top_down_sppf"))
+    # res.append((['python3', './parse_programs/gfg_parse.py', '--grammar', 'a_grammar', '--bottomup', '--input', ''], "gfg_bottom_up_sppf"))
+    res.append((['python3', './parse_programs/gfg_parse.py', '--grammar', 'a_grammar', '--single', '--input', ''], "gfg_single_tree"))
+    res.append((['python3', './parse_programs/lark_parse.py', '--grammar', 'a_grammar', '--earley', '--input', ''], "lark_earley_sppf"))
+    # res.append((['python3', './parse_programs/lark_parse.py', '--grammar', 'a_grammar', '--cyk', '--input', ''], "lark_cyk_single"))
+    res.append((['python3', './parse_programs/spark_parse.py', '--grammar', 'a_grammar', '--input', ''], "spark_earley_single"))
+
+    return res
+
 
 def write_benchmark_results_to_file(input_len, times, memory_usages, output_file):
     os.makedirs(os.path.dirname(output_file), exist_ok=True)
@@ -141,4 +161,5 @@ if __name__ == "__main__":
     max_size = args.maxSize
 
 
-    run_benchmarks_all_algorithms("b_grammar", get_b_grammar_parsers(), generate_b_strings, max_size, num_repeats)
+    # run_benchmarks_all_algorithms("b_grammar", get_b_grammar_parsers(), generate_b_strings, max_size, num_repeats)
+    run_benchmarks_all_algorithms("a_grammar", get_a_grammar_parsers(), generate_a_strings, max_size, num_repeats)

@@ -160,7 +160,7 @@ class GFG:
                         end_node = self.nodes[called_prod_end]
                         edge_label = ""
                     else:
-                        print(f"\t\TODO RAISE ERROR unrecognized term: {term}") 
+                        # print(f"\t\TODO RAISE ERROR unrecognized term: {term}") 
                         return
                     
                     # update prev_node and prefix_label
@@ -358,14 +358,14 @@ class GFG:
         self.lexer.input(data)
         sigma_sets = [set() for x in range(len(data) + 1)]
         self.family_map = {}
-        sppf = Sppf_Old() 
+        sppf = Sppf_Old(self.use_pydot) 
 
         Q_p = set()
         R = set()
         V = set()
 
         start_node = self.map_prod_name_to_start[start_prod]
-        print(start_node)
+        # print(start_node)
         sigma_sets[0].add((start_node, 0, -1)) # just add the start node
 
         for i in range(len(data) + 1):
@@ -377,26 +377,26 @@ class GFG:
             # start speculative phase
             while len(R) > 0:
                 cur_node_idx, cur_node_tag, cur_node_sppf = R.pop()
-                print(f"speculate on node: ({self.nodes[cur_node_idx]}, {cur_node_tag}, {cur_node_sppf})")
+                # print(f"speculate on node: ({self.nodes[cur_node_idx]}, {cur_node_tag}, {cur_node_sppf})")
 
                 # calls should goto their starts
                 if self.nodes[cur_node_idx].is_call:
                     for target, token in self.nodes[cur_node_idx].outgoing_edges.items():
                         e_item = (target, i, -1)
                         if e_item not in sigma_sets[i]:
-                            print(f"adding to sigma set: ({self.nodes[target]}, {i}, {-1})")
+                            # print(f"adding to sigma set: ({self.nodes[target]}, {i}, {-1})")
                             R.add(e_item)
                             sigma_sets[i].add(e_item)
 
                 # scan nodes should be added to Q
                 if self.nodes[cur_node_idx].is_scan and self.nodes[cur_node_idx].is_entry:
                     for target, token in self.nodes[cur_node_idx].outgoing_edges.items():
-                        print(f"adding to Q: ({self.nodes[cur_node_idx]}, {i}, {-1})")
+                        # print(f"adding to Q: ({self.nodes[cur_node_idx]}, {i}, {-1})")
                         Q.add((cur_node_idx, i, -1))
                 
                 if self.nodes[cur_node_idx].is_scan and self.nodes[cur_node_idx].is_return:
                     for target, token in self.nodes[cur_node_idx].outgoing_edges.items():
-                        print(f"adding to Q: ({self.nodes[cur_node_idx]}, {i}, {-1})")
+                        # print(f"adding to Q: ({self.nodes[cur_node_idx]}, {i}, {-1})")
                         Q.add((cur_node_idx, cur_node_tag, cur_node_sppf))
                 
                 # exit from an epsilon
@@ -411,7 +411,7 @@ class GFG:
 
                 #exits just add the end
                 if self.nodes[cur_node_idx].is_exit and cur_node_sppf != -1:
-                    print("found an exit node")
+                    # print("found an exit node")
                     end_node = list(self.nodes[cur_node_idx].outgoing_edges)[0]
                     # create the end sppf node
                     new_sppf_node = self.make_forward_node_inference(end_node, cur_node_tag, i, cur_node_sppf, -1, sppf)
@@ -426,29 +426,29 @@ class GFG:
                     for target, token in self.nodes[cur_node_idx].outgoing_edges.items():
                         e_item = (target, i, -1)
                         if e_item not in sigma_sets[i]:
-                            print(f"adding to sigma set: ({self.nodes[target]}, {i}, {-1})")
+                            # print(f"adding to sigma set: ({self.nodes[target]}, {i}, {-1})")
                             R.add(e_item)
                             sigma_sets[i].add(e_item)                    
 
                 # end nodes need to return properly
                 if self.nodes[cur_node_idx].type == "end":
-                    print("found an end node")
+                    # print("found an end node")
                     # find the person that called the thing we ended
                     start_node = self.map_end_to_start[cur_node_idx]
                     new_sigma_items = set()
                     for caller_node_idx, caller_node_tag, caller_node_sppf in sigma_sets[cur_node_tag]:
-                        print(f"candidate caller: {self.nodes[caller_node_idx]}, {caller_node_tag}, {caller_node_sppf}")
+                        # print(f"candidate caller: {self.nodes[caller_node_idx]}, {caller_node_tag}, {caller_node_sppf}")
                         if self.nodes[caller_node_idx].is_call:
                             target_start = list(self.nodes[caller_node_idx].outgoing_edges)[0]
                             # this is maybe the item that called us
                             if target_start == start_node:
                                 ret_node = self.map_call_to_return[caller_node_idx]
-                                print(f"call to: {self.nodes[caller_node_idx]}")
-                                print(f"ret to: {self.nodes[ret_node]}")
+                                # print(f"call to: {self.nodes[caller_node_idx]}")
+                                # print(f"ret to: {self.nodes[ret_node]}")
                                 new_sppf_node = self.make_forward_node_inference(ret_node, caller_node_tag, i, caller_node_sppf, cur_node_sppf, sppf)
                                 new_item = (ret_node, caller_node_tag, new_sppf_node)
                                 if new_item not in sigma_sets[i]:
-                                    print(f"adding to sigma set: ({self.nodes[ret_node]}, {caller_node_tag}, {-1})")
+                                    # print(f"adding to sigma set: ({self.nodes[ret_node]}, {caller_node_tag}, {-1})")
                                     if i != cur_node_tag:
                                         R.add(new_item)
                                         sigma_sets[i].add(new_item)
@@ -464,13 +464,13 @@ class GFG:
             if in_tok is not None:
                 sppf.add_node((in_tok, i, i+1), in_tok, "")
                 v = (in_tok, i, i+1)
-                print("creating token node:", (in_tok, i, i+1))
+                # print("creating token node:", (in_tok, i, i+1))
             
 
             # scanned forward. glue to created node, and put in next sigma set
             while len(Q) > 0:
                 cur_node_idx, cur_node_tag, cur_node_sppf = Q.pop()
-                print(f"scan on node: ({self.nodes[cur_node_idx]}, {cur_node_tag}, {cur_node_sppf})")
+                # print(f"scan on node: ({self.nodes[cur_node_idx]}, {cur_node_tag}, {cur_node_sppf})")
                 for target, token in self.nodes[cur_node_idx].outgoing_edges.items():
                     if token != in_tok:
                         continue
@@ -479,24 +479,25 @@ class GFG:
                     
                     # scan through and add it to the next set
                     if self.nodes[target].is_remaining_sentinal or self.nodes[target].is_call:
-                        print(f"adding to sigma': ({self.nodes[target]}, {cur_node_tag}, {y})")
+                        # print(f"adding to sigma': ({self.nodes[target]}, {cur_node_tag}, {y})")
                         sigma_sets[i+1].add(e_item)
             
                     # scan once again to keep Q' populated with ongoing terminal parses
                     for _, token in self.nodes[target].outgoing_edges.items():
                         if in_tok is not None and token == in_tok:
-                            print(f"adding to Q': ({self.nodes[target]}, {cur_node_tag}, {y})")
+                            # print(f"adding to Q': ({self.nodes[target]}, {cur_node_tag}, {y})")
                             Q_p.add(e_item)
         
 
         for sset in sigma_sets:
             for node, index, sppf_node in sset:
-                print(f"({self.nodes[node]}, {index}, {sppf_node})", end=", ")
-            print()
+                pass
+                # print(f"({self.nodes[node]}, {index}, {sppf_node})", end=", ")
+            # print()
         
         for x in sigma_sets[-1]:
             if x[0] == 1 and x[1] == 0:
-                print("tree root", x[2])
+                # print("tree root", x[2])
                 sppf.rebuild_with_root(x[2])
                 return sppf
         return False
@@ -523,7 +524,7 @@ class GFG:
         self.lexer.input(data)
         sigma_sets = [set() for x in range(len(data) + 1)]
         self.family_map = {}
-        sppf = Sppf_Old()
+        sppf = Sppf_Old(use_pydot=self.use_pydot)
 
         Q_p = set() # scan forward elements 
         R = set() # set of items that need to be processed to add to cur sigma
@@ -538,7 +539,7 @@ class GFG:
         START_PROD = self.map_prod_name_to_start[start_producition]
         for entry_child, _ in self.nodes[START_PROD].outgoing_edges.items():
             if self.nodes[entry_child].is_call or self.nodes[entry_child].is_remaining_sentinal:
-                print(f"add {self.nodes[entry_child]} to initial sigma set")
+                # print(f"add {self.nodes[entry_child]} to initial sigma set")
                 sigma_sets[0].add((entry_child, 0, -1))
 
             scan_child, scan_tok = next(iter(self.nodes[entry_child].outgoing_edges.items()))
@@ -560,7 +561,7 @@ class GFG:
                 h = element[1]
                 w = element[2]
 
-                print("processing", ele_node, h, w)
+                # print("processing", ele_node, h, w)
                 
                 # R and E can be thought of what we explore NOW
                 # Q can be thought of what we should explore NEXT
@@ -569,37 +570,38 @@ class GFG:
                 
                 # call to production should go explore the production
                 if ele_node.is_call:
-                    print(f"found call {ele_node}")
+                    # print(f"found call {ele_node}")
                     start_label = next(iter(ele_node.outgoing_edges.keys()))
                     start_node = self.nodes[start_label]
                     if start_label in H.keys():
-                        print("in h!!!!!!")
+                        # print("in h!!!!!!")
                         exit()
                     for child, tok in start_node.outgoing_edges.items():
                         e_item = (child, i, -1)
                         if (self.nodes[child].is_entry and self.nodes[child].is_exit):
-                            print(f"added Q {(child, i, -1)} epsilon")
+                            # print(f"added Q {(child, i, -1)} epsilon")
                             Q.add((child, i, -1))
                             
                         if (self.nodes[child].is_call or self.nodes[child].is_remaining_sentinal) and e_item not in sigma_sets[i]:
-                            print("added R")
+                            # print("added R")
                             R.add(e_item)
                             sigma_sets[i].add(e_item)
                         
                         scan_child, scan_tok = next(iter(self.nodes[child].outgoing_edges.items()))
                         if self.nodes[child].is_scan:
-                            print("scan checking:", self.nodes[scan_child], scan_tok, in_tok)
+                            # print("scan checking:", self.nodes[scan_child], scan_tok, in_tok)
                             if in_tok == scan_tok or (self.nodes[child].is_entry and self.nodes[child].is_exit):
-                                print(f"added Q {(child, i, -1)} {self.nodes[child]}")
+                                # print(f"added Q {(child, i, -1)} {self.nodes[child]}")
                                 Q.add((child, i, -1))
 
                 if ele_node.type == "end":
-                    print(f"end {ele_node}")
+                    # print(f"end {ele_node}")
+                    pass
                     
                 # on the end of a parse we should go back to the caller. 
                 # if the caller is done we should then add an sppf node which is under.
                 if ele_node.is_exit:
-                    print(f"found exit {ele_node}, {h}, {w}")
+                    # print(f"found exit {ele_node}, {h}, {w}")
                     end_node = next(iter(ele_node.outgoing_edges.keys()))
                     start_node = self.map_end_to_start[end_node]
                     if w == -1:
@@ -608,13 +610,13 @@ class GFG:
                         epsilon_node = ("ϵ", 0, 0)
                         sppf.add_node(epsilon_node, "ϵ", "symbol")
                         sppf.add_edge(attempted_node, epsilon_node)
-                        print(f"eps before {sigma_sets[i]}")
+                        # print(f"eps before {sigma_sets[i]}")
                         sigma_sets[i].remove(element)
                         sigma_sets[i].add((element[0], element[1], attempted_node))
                         w = attempted_node
-                        print(f"eps after {sigma_sets[i]}")
+                        # print(f"eps after {sigma_sets[i]}")
                     if h == i:
-                        print(f"add to H {self.nodes[start_node]}")
+                        # print(f"add to H {self.nodes[start_node]}")
                         H[start_node] = w
                     again = True
                     while again:
@@ -626,7 +628,7 @@ class GFG:
                             if not (next(iter(self.nodes[item].outgoing_edges.keys())) == start_node):
                                 continue
                             return_node = self.map_call_to_return[item]
-                            print("return checks", self.nodes[return_node])
+                            # print("return checks", self.nodes[return_node])
                             # item is a call to the prod we just finished
                             y = self.make_forward_node(return_node, k, i, z, w, V, sppf)
                             e_item = (return_node, k, y)
@@ -634,16 +636,16 @@ class GFG:
                                 again = True
                                 sigma_sets[i].add(e_item)
                                 R.add(e_item)
-                                print("call back")
-                                print("finished prod:", self.nodes[end_node], h, w)
-                                print("return node:", self.nodes[return_node], k, z)
+                                # print("call back")
+                                # print("finished prod:", self.nodes[end_node], h, w)
+                                # print("return node:", self.nodes[return_node], k, z)
                             
                             # we can scan here. add to Q
                             scan_child, scan_tok = next(iter(self.nodes[return_node].outgoing_edges.items()))
                             if self.nodes[return_node].is_scan or (self.nodes[return_node].is_entry and self.nodes[return_node].is_exit):
-                                print("scan checking:", self.nodes[scan_child], scan_tok, in_tok)
+                                # print("scan checking:", self.nodes[scan_child], scan_tok, in_tok)
                                 if in_tok == scan_tok or (self.nodes[return_node].is_entry and self.nodes[return_node].is_exit):
-                                    print(f"added Q {e_item} {self.nodes[e_item[0]]}")
+                                    # print(f"added Q {e_item} {self.nodes[e_item[0]]}")
                                     Q.add(e_item)
                         
                     
@@ -653,9 +655,9 @@ class GFG:
             if in_tok is not None:
                 sppf.add_node((in_tok, i, i+1), in_tok, "")
                 v = (in_tok, i, i+1)
-                print("creating token node:", (in_tok, i, i+1))
+                # print("creating token node:", (in_tok, i, i+1))
 
-            print("start scan")
+            # print("start scan")
             
             in_tok = self.lexer.token() 
             in_tok = in_tok.type if in_tok is not None else None
@@ -663,12 +665,12 @@ class GFG:
                 element = Q.pop()
                 node, h, w = element
                 if self.nodes[node].is_scan or self.nodes[node].is_exit:
-                    print("scan forward attempt:", self.nodes[node], h, w)
+                    # print("scan forward attempt:", self.nodes[node], h, w)
                     next_node = next(iter(self.nodes[node].outgoing_edges))
                     y = self.make_forward_node(next_node, h, i+1, w, v, V, sppf)
                     e_item = (next_node, h, y)
                     if self.nodes[next_node].is_call or self.nodes[next_node].is_remaining_sentinal:
-                        print("sigma set advance", self.nodes[next_node])
+                        # print("sigma set advance", self.nodes[next_node])
                         sigma_sets[i+1].add(e_item)
 
                     if self.nodes[node].is_scan or (self.nodes[node].is_entry and self.nodes[node].is_exit):
@@ -676,36 +678,37 @@ class GFG:
                         for scan_child, scan_tok in self.nodes[next_node].outgoing_edges.items():
                             if (in_tok is not None and (in_tok == scan_tok or scan_tok == "empty")) or (self.nodes[node].is_entry and self.nodes[node].is_exit):
                                 Q_p.add(e_item)
-                                print(f"added Q {e_item}")
-                                print("added scan Q_p", self.nodes[next_node])
-            print("-"*10)
+                                # print(f"added Q {e_item}")
+                                # print("added scan Q_p", self.nodes[next_node])
+            # print("-"*10)
 
-        print("working ssets:")
+        # # print("working ssets:")
         for sset in sigma_sets:
             for node, index, sppf_node in sset:
-                print(f"({self.nodes[node]}, {index}, {sppf_node})", end=", ")
-            print()
+                # # print(f"({self.nodes[node]}, {index}, {sppf_node})", end=", ")
+                pass
+            # # print()
         for x in sigma_sets[-1]:
             if self.nodes[x[0]].is_exit:
                 end_node = next(iter(self.nodes[x[0]].outgoing_edges))
                 #return x[2]
                 if end_node == 1:
-                    print("tree root", x[2])
+                    # # print("tree root", x[2])
                     sppf.rebuild_with_root(x[2])
                     return sppf
-        print("no parse!")
-        print()
+        # print("no parse!")
+        # print()
         return False
             
 
     def make_forward_node(self, ret, j, i, w, other_sppf_node, all_sppf_nodes, sppf):
         # if done we should create the node that captures the whole production
-        print(f"input to make node {self.nodes[ret]}, {j}, {i}")
+        # print(f"input to make node {self.nodes[ret]}, {j}, {i}")
         if self.nodes[ret].is_exit:
             s = next(iter(self.nodes[ret].outgoing_edges))
             s = self.map_end_to_start[s]
             s = self.nodes[s]
-            print(f"change node to {s}")
+            # print(f"change node to {s}")
             # s = self.map_start_to_prod_name[s]
         else:
             s = self.nodes[ret]
@@ -715,25 +718,26 @@ class GFG:
             y = other_sppf_node
         else:
             attempted_node = (s, j, i)
-            print("w node:", w)
-            print("attempted node:", attempted_node)
+            # print("w node:", w)
+            # print("attempted node:", attempted_node)
             if attempted_node not in all_sppf_nodes:
-                print("creating sppf node:", attempted_node)
+                # print("creating sppf node:", attempted_node)
                 all_sppf_nodes.add(attempted_node)
                 ln = s.long_name
                 if s.is_call:
-                    print("create call node")
+                    # print("create call node")
+                    pass
                 if s.type == "start":
                     ln = self.map_start_to_prod_name[s.label]
                 sppf.add_node(attempted_node, ln, "")
             if w == -1:
                 if other_sppf_node not in [x[0] for x in sppf.nodes[attempted_node].outgoing_edges.items()]:
-                    print("add edge", attempted_node, other_sppf_node)
+                    # print("add edge", attempted_node, other_sppf_node)
                     sppf.add_edge(attempted_node, other_sppf_node)
             if w != -1:
                 family_def = (f"{w},{other_sppf_node}", w, other_sppf_node)
                 if family_def not in [x[0] for x in sppf.nodes[attempted_node].outgoing_edges.items()]:
-                    print("add family", attempted_node, w, other_sppf_node)
+                    # print("add family", attempted_node, w, other_sppf_node)
                     sppf.add_family(attempted_node, w, other_sppf_node)
             y = attempted_node
         return y
@@ -1127,18 +1131,18 @@ if __name__ == "__main__":
     #test_gfg = GFG(ExprLexer())
     test_gfg = GFG(ABLexer())
 
-    productions = {
-        "S": [["A", "b"], ["b", "A"]],
-        "A": [["b", "b", "b"]],
-    }
+    # productions = {
+    #     "S": [["A", "b"], ["b", "A"]],
+    #     "A": [["b", "b", "b"]],
+    # }
 
-    productions = {
-        "S": [["S"], ["b"], ["A", "b"]],
-        "A": [["b"], []],
-    }
+    # productions = {
+    #     "S": [["S"], ["b"], ["A", "b"]],
+    #     "A": [["b"], []],
+    # }
     
     # test_gfg = GFG(ExprLexer())
-    test_gfg = GFG(ABLexer(), use_pydot=True)
+    test_gfg = GFG(ABLexer(), use_pydot=False)
 
     # simple expression grammar used in gfg paper examples
     # productions = {
@@ -1150,12 +1154,12 @@ if __name__ == "__main__":
     # }
 
     # example 2 grammar in Scott's paper
-    # productions = {
-    #     "S": [["L"]],
-    #     "L": [["b"],
-    #           ["L", "L"]
-    #          ]
-    # }
+    productions = {
+        "S": [["L"]],
+        "L": [["b"],
+              ["L", "L"]
+             ]
+    }
 
     # example 3 grammar in Scott's paper
     # productions = {
@@ -1196,15 +1200,15 @@ if __name__ == "__main__":
     # data = "(7+9"
     # print(f"is {data} in language: {test_gfg.recognize_string(data)}")
 
-    data = "b"
+    data = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
     print(f"is {data} in language: {test_gfg.recognize_string(data)}")
     # print(f"{data} parse tree:")
     # print_tree(test_gfg.parse_string(data))
 
     # sppf = test_gfg.parse_all_trees(data)
     # sppf.graph.write_png("sppf.png")
-    ret = test_gfg.parse_top_down(data)
-    ret.graph.write_png("sppf.png")
-    #f_sppf = test_gfg.sppf_forward_inference(data)
-    #f_sppf = test_gfg.sppf_forward(data)
-    #f_sppf.graph.write_png("sppf_forward.png")
+    # ret = test_gfg.parse_top_down(data)
+    # ret.graph.write_png("sppf.png")
+    f_sppf = test_gfg.sppf_forward_inference(data)
+    # f_sppf = test_gfg.sppf_forward(data)
+    # f_sppf.graph.write_png("sppf_forward.png")

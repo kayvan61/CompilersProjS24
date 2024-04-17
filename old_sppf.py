@@ -31,12 +31,16 @@ class SppfNode_Old:
 
 class Sppf_Old:
 
-    def __init__(self):
+    def __init__(self, use_pydot=True):
         self.nodes = {}
-        self.graph = pydot.Dot("sppf_graph", graph_type="digraph", bgcolor="white")
+        self.use_pydot = use_pydot
+
+        if self.use_pydot:
+            self.graph = pydot.Dot("sppf_graph", graph_type="digraph", bgcolor="white")
         
     def rebuild_with_root(self, root_node):
-        self.graph = pydot.Dot("sppf_graph", graph_type="digraph", bgcolor="white")
+        if self.use_pydot:
+            self.graph = pydot.Dot("sppf_graph", graph_type="digraph", bgcolor="white")
         root = self.nodes[root_node]
         self.rebuild_node(root)
     
@@ -45,26 +49,32 @@ class Sppf_Old:
             return
 
         node.rebuilt = True
-        if node.type == "packed":
-            self.graph.add_node(pydot.Node(node.get_pydot_label(), label="", shape="circle"))
-        else:
-            self.graph.add_node(pydot.Node(node.get_pydot_label(), shape="circle"))
+        if self.use_pydot:
+            if node.type == "packed":
+                self.graph.add_node(pydot.Node(node.get_pydot_label(), label="", shape="circle"))
+            else:
+                self.graph.add_node(pydot.Node(node.get_pydot_label(), shape="circle"))
             
         for dst,_ in node.outgoing_edges.items():
             self.rebuild_node(self.nodes[dst])
-            self.graph.add_edge(pydot.Edge(node.get_pydot_label(), self.nodes[dst].get_pydot_label()))
+            if self.use_pydot:
+                self.graph.add_edge(pydot.Edge(node.get_pydot_label(), self.nodes[dst].get_pydot_label()))
             
 
     def add_node(self, node_def, long_name, type):
         if node_def not in self.nodes:
             node = SppfNode_Old(node_def, long_name, type)
             self.nodes[node_def] = node
-            if type == "packed":
-                self.graph.add_node(pydot.Node(node.get_pydot_label(), label="", shape="circle"))
-            else :
-                self.graph.add_node(pydot.Node(node.get_pydot_label(), shape="circle"))
+
+
+            if self.use_pydot:
+                if type == "packed":
+                    self.graph.add_node(pydot.Node(node.get_pydot_label(), label="", shape="circle"))
+                else :
+                    self.graph.add_node(pydot.Node(node.get_pydot_label(), shape="circle"))
         else:
-            print(f"Node: {node_def} already exists in graph")
+            pass
+            # print(f"Node: {node_def} already exists in graph")
 
     def add_edge(self, src, dest):
         src_node = self.nodes[src]
@@ -76,7 +86,8 @@ class Sppf_Old:
 
             # optional edges in pydot for gfs visualization, scan edges are black, 
             # epsilon edges are red
-            self.graph.add_edge(pydot.Edge(src_node.get_pydot_label(), dest_node.get_pydot_label()))
+            if self.use_pydot:
+                self.graph.add_edge(pydot.Edge(src_node.get_pydot_label(), dest_node.get_pydot_label()))
             # print(f"\t\t\tcreating edge from {src.long_name} to {dest.long_name} with LABEL: {label}")
 
     def add_family(self, parent, child1, child2):

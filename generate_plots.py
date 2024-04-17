@@ -74,5 +74,8 @@ def generate_time_plot(grammar_name, parser_algorithms):
 if __name__ == "__main__":
     
 
-    generate_time_plot("b_grammar", [gfg_single_tree, gfg_top_down_sppf, lark_earley_sppf, lark_cyk_single, spark_earley_single])
-    generate_mem_usage_plot("b_grammar", [gfg_single_tree, gfg_top_down_sppf, lark_earley_sppf, lark_cyk_single, spark_earley_single])
+    generate_time_plot("b_grammar", [gfg_single_tree, gfg_top_down_sppf, gfg_bottom_up_sppf, lark_earley_sppf, lark_cyk_single, spark_earley_single])
+    generate_mem_usage_plot("b_grammar", [gfg_single_tree, gfg_top_down_sppf, gfg_bottom_up_sppf, lark_earley_sppf, lark_cyk_single, spark_earley_single])
+
+    generate_time_plot("a_grammar", [gfg_single_tree, gfg_top_down_sppf, gfg_bottom_up_sppf, lark_earley_sppf, spark_earley_single])
+    generate_mem_usage_plot("a_grammar", [gfg_single_tree, gfg_top_down_sppf, gfg_bottom_up_sppf, lark_earley_sppf, spark_earley_single])
