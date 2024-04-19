@@ -33,7 +33,10 @@ def run_benchmark(parser, string, num_repeat):
 
         info = psutil.Process(process.pid)
         while process.poll() == None:
-            mem = info.memory_info().rss
+            try:
+                mem = info.memory_info().rss
+            except psutil.NoSuchProcess as e:
+                pass
             # print(mem)
             max_mem = max(max_mem, mem)
             # sleep????
