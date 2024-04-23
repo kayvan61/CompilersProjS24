@@ -16,10 +16,11 @@ parent = os.path.dirname(current)
 # the sys.path.
 sys.path.append(parent)
 
-from sparkparser import BParser
+from parse_programs.SparkParsers.sparkparser import BParser, AParser
 
 parsers = {
-    "b_grammar": BParser()
+    "b_grammar": BParser(),
+    "a_grammar": AParser()
 }
 
 def main(input_string, parser):    

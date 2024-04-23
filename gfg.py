@@ -1,5 +1,6 @@
 from expr_lexer import ExprLexer
 from ab_lexer import ABLexer
+from cLexer import CLangLexer, cLangProductions
 from sppf import Sppf
 from old_sppf import Sppf_Old
 import pydot
@@ -143,7 +144,7 @@ class GFG:
                     src_node = end_node if prev_node.is_call else prev_node
                     self.add_edge(src_node, new_node, edge_label)
 
-                    if term in self.lexer.tokens:
+                    if term in self.lexer.tokens or (len(term) == 1 and term in self.lexer.literals):
                         # term is a terminal, next edge should be a scan edge
                         new_node.is_scan = True
                         edge_label = f"{term}"
@@ -165,7 +166,7 @@ class GFG:
                     
                     # update prev_node and prefix_label
                     prev_node = new_node
-                    prefix_label = prefix_label + f"{term},"
+                    prefix_label = prefix_label + f"{term} "
 
                 # reached exit node for current production
                 long_name = f"[{prefix_label}•]" if self.use_pydot else ""
@@ -341,6 +342,11 @@ class GFG:
 
                             if self.nodes[dest_label].is_call:
                                 next_call_set.add((dest_label, tag))
+
+            # if len(next_set) == 0:
+            #     print("failed to advance on token ", tok)
+            # else:
+            #     print(tok.value)
 
             # append the next sigma set and map end to call
             sigma_sets.append(next_set)
@@ -1073,7 +1079,7 @@ class GFG:
         sppf = Sppf(use_pydot and self.use_pydot)
 
         # INIT RULE
-        root_node_def = (1, 0, len(data))
+        root_node_def = (1, 0, len(sigma_sets) - 1)
         sppf.add_node(root_node_def, self.nodes[1].long_name, "symbol")
 
         node_stack = []
@@ -1099,20 +1105,19 @@ def print_tree(node, level=0):
 
 if __name__ == "__main__":
     #test_gfg = GFG(ExprLexer())
-    test_gfg = GFG(ABLexer())
+    # test_gfg = GFG(ABLexer())
+    test_gfg = GFG(CLangLexer())
 
-    productions = {
-        "S": [["A", "b"], ["b", "A"]],
-        "A": [["b", "b", "b"]],
-    }
+    # productions = {
+    #     "S": [["A", "b"], ["b", "A"]],
+    #     "A": [["b", "b", "b"]],
+    # }
 
-    productions = {
-        "S": [["S"], ["b"], ["A", "b"]],
-        "A": [["b"], []],
-    }
+    # productions = {
+    #     "S": [["S"], ["b"], ["A", "b"]],
+    #     "A": [["b"], []],
+    # }
     
-    # test_gfg = GFG(ExprLexer())
-    test_gfg = GFG(ABLexer(), use_pydot=True)
 
     # simple expression grammar used in gfg paper examples
     # productions = {
@@ -1152,33 +1157,26 @@ if __name__ == "__main__":
     #           ["b"]]
     # }
 
+    productions = cLangProductions
+    
     test_gfg.build_gfg(productions, "S")
 
     # must have graphvis installed for this to work
-    if test_gfg.use_pydot:
-        test_gfg.graph.write_png("output.png")
+    # if test_gfg.use_pydot:
+    #     test_gfg.graph.write_png("output.png")
 
-    #data = "7 + 8 + 9"
-    # print(f"is {data} in language: {test_gfg.recognize_string(data)}")
-    # print(f"{data} parse tree:")
-    # print_tree(test_gfg.parse_string(data))
-
-
-    # sppf = test_gfg.parse_all_trees(data)
-    # sppf.graph.write_png("sppf.png")
-
-    # data = "(7+9"
-    # print(f"is {data} in language: {test_gfg.recognize_string(data)}")
-
-    data = "b"
+    data =  '''
+int main() {
+    return 0;
+}
+            '''
     print(f"is {data} in language: {test_gfg.recognize_string(data)}")
-    # print(f"{data} parse tree:")
-    # print_tree(test_gfg.parse_string(data))
+    print(f"{data} parse tree:")
+    print_tree(test_gfg.parse_string(data))
 
-    # sppf = test_gfg.parse_all_trees(data)
+
+    # sppf = test_gfg.parse_top_down(data)
     # sppf.graph.write_png("sppf.png")
-    ret = test_gfg.parse_top_down(data)
-    ret.graph.write_png("sppf.png")
-    #f_sppf = test_gfg.sppf_forward_inference(data)
-    #f_sppf = test_gfg.sppf_forward(data)
-    #f_sppf.graph.write_png("sppf_forward.png")
+    f_sppf = test_gfg.sppf_forward_inference(data)
+    # f_sppf = test_gfg.sppf_forward(data)
+    f_sppf.graph.write_png("sppf_forward.png")
