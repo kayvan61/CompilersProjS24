@@ -362,7 +362,7 @@ class GFG:
     
     def sppf_forward_inference(self, data, start_prod="S"):
         self.lexer.input(data)
-        sigma_sets = [set() for x in range(len(data) + 1)]
+        sigma_sets = [set()]
         self.family_map = {}
         sppf = Sppf(self.use_pydot) 
 
@@ -372,8 +372,17 @@ class GFG:
 
         start_node = self.map_prod_name_to_start[start_prod]
         sigma_sets[0].add((start_node, 0, -1)) # just add the start node
+        done = False
+        really_done = False
 
-        for i in range(len(data) + 1):
+        # for i in range(len(data) + 1):
+        i = 0
+        in_tok = self.lexer.token() 
+        in_tok = in_tok.type if in_tok is not None else None
+
+        while not really_done:
+            if done:
+                really_done = True
             R = sigma_sets[i].copy()
             H = {} # used for epsilon productions
             Q = Q_p
@@ -382,7 +391,7 @@ class GFG:
             # start speculative phase
             while len(R) > 0:
                 cur_node_idx, cur_node_tag, cur_node_sppf = R.pop()
-
+        
                 # calls should goto their starts
                 if self.nodes[cur_node_idx].is_call:
                     for target, token in self.nodes[cur_node_idx].outgoing_edges.items():
@@ -393,12 +402,11 @@ class GFG:
 
                 # scan nodes should be added to Q
                 if self.nodes[cur_node_idx].is_scan and self.nodes[cur_node_idx].is_entry:
-                    for target, token in self.nodes[cur_node_idx].outgoing_edges.items():
-                        Q.add((cur_node_idx, i, -1))
+                    Q.add((cur_node_idx, i, -1))
                 
+                # this is a string
                 if self.nodes[cur_node_idx].is_scan and self.nodes[cur_node_idx].is_return:
-                    for target, token in self.nodes[cur_node_idx].outgoing_edges.items():
-                        Q.add((cur_node_idx, cur_node_tag, cur_node_sppf))
+                    Q.add((cur_node_idx, cur_node_tag, cur_node_sppf))
                 
                 # exit from an epsilon
                 if self.nodes[cur_node_idx].is_exit and cur_node_sppf == -1:
@@ -410,7 +418,7 @@ class GFG:
                     sigma_sets[i].add((cur_node_idx, cur_node_tag, (cur_node_idx, i, i)))
                     R.add((cur_node_idx, cur_node_tag, (cur_node_idx, i, i)))
 
-                #exits just add the end
+                # exits just add the end
                 if self.nodes[cur_node_idx].is_exit and cur_node_sppf != -1:
                     end_node = list(self.nodes[cur_node_idx].outgoing_edges)[0]
                     # create the end sppf node
@@ -453,18 +461,23 @@ class GFG:
                         sigma_sets[i].add(x) 
             
             # make the token node
-            in_tok = self.lexer.token() 
-            in_tok = in_tok.type if in_tok is not None else None
             if in_tok is not None:
                 sppf.add_node((in_tok, i, i+1), in_tok, "")
                 v = (in_tok, i, i+1)
+            else:
+                done = True
+            sigma_sets.append(set())
+
+            last_tok = in_tok
+            in_tok = self.lexer.token() 
+            in_tok = in_tok.type if in_tok is not None else None
             
 
             # scanned forward. glue to created node, and put in next sigma set
             while len(Q) > 0:
                 cur_node_idx, cur_node_tag, cur_node_sppf = Q.pop()
                 for target, token in self.nodes[cur_node_idx].outgoing_edges.items():
-                    if token != in_tok:
+                    if token != last_tok:
                         continue
                     y = self.make_forward_node_inference(target, cur_node_tag, i+1, cur_node_sppf, v, sppf)
                     e_item = (target, cur_node_tag, y)
@@ -472,12 +485,15 @@ class GFG:
                     # scan through and add it to the next set
                     if self.nodes[target].is_remaining_sentinal or self.nodes[target].is_call:
                         sigma_sets[i+1].add(e_item)
-            
+
                     # scan once again to keep Q' populated with ongoing terminal parses
                     for _, token in self.nodes[target].outgoing_edges.items():
                         if in_tok is not None and token == in_tok:
                             Q_p.add(e_item)
-        
+            
+            i += 1
+
+
         return sppf
         return False
                         
@@ -1175,8 +1191,8 @@ int main() {
     # print_tree(test_gfg.parse_string(data))
 
 
-    # sppf = test_gfg.parse_top_down(data)
-    # sppf.graph.write_png("sppf.png")
-    # f_sppf = test_gfg.sppf_forward_inference(data)
+    sppf = test_gfg.parse_top_down(data)
+    sppf.graph.write_png("sppf.png")
+    f_sppf = test_gfg.sppf_forward_inference(data)
     # f_sppf = test_gfg.sppf_forward(data)
-    # f_sppf.graph.write_png("sppf_forward.png")
+    f_sppf.graph.write_png("sppf_forward.png")
