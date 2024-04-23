@@ -1171,12 +1171,12 @@ int main() {
 }
             '''
     print(f"is {data} in language: {test_gfg.recognize_string(data)}")
-    print(f"{data} parse tree:")
-    print_tree(test_gfg.parse_string(data))
+    # print(f"{data} parse tree:")
+    # print_tree(test_gfg.parse_string(data))
 
 
     # sppf = test_gfg.parse_top_down(data)
     # sppf.graph.write_png("sppf.png")
-    f_sppf = test_gfg.sppf_forward_inference(data)
+    # f_sppf = test_gfg.sppf_forward_inference(data)
     # f_sppf = test_gfg.sppf_forward(data)
-    f_sppf.graph.write_png("sppf_forward.png")
+    # f_sppf.graph.write_png("sppf_forward.png")

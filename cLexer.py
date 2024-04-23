@@ -5,15 +5,37 @@ cLangProductions = {
     "S": [
         ['program'],
     ],
-    "program": [
+    "program": [ # IDK WHAT THE ACTUAL START PRODUCTION IS
         ['function_definition'],
-        ['program', 'function_definition']
+        ['program', 'function_definition'],
+        ['statement'],
+        ['program', 'statement']
     ],
     "primary_expression": [
         ['IDENTIFIER'],
-        ['CONSTANT'],
-        ['STRING_LITERAL'],
+        ['constant'],
+        ['string'],
         ['(', 'expression', ')'],
+        ['generic_selection'],
+    ],
+    "constant": [
+        ['I_CONSTANT'],
+        ['F_CONSTANT'],
+    ],
+    "string": [
+        ['STRING_LITERAL'],
+        ['FUNC_NAME'],
+    ],
+    "generic_selection": [
+        ['GENERIC', '(', 'assignment_expression', ',', 'generic_assoc_list', ')']
+    ],
+    "generic_assoc_list": [
+        ['generic_association'],
+        ['generic_assoc_list', ',', 'generic_association']
+    ],
+    "generic_association": [
+        ['type_name', ':', 'assignment_expression'],
+        ['DEFAULT', ':', 'assignment_expression'],
     ],
     "postfix_expression": [
         ['primary_expression'],
@@ -24,6 +46,8 @@ cLangProductions = {
         ['postfix_expression', 'PTR_OP', 'IDENTIFIER'],
         ['postfix_expression', 'INC_OP',],
         ['postfix_expression', 'DEC_OP'],
+        ['(', 'type_name', ')', '{', 'initializer_list', '}'],
+        ['(', 'type_name', ')', '{', 'initializer_list', ',', '}'],
     ],
     "argument_expression_list": [
         ['assignment_expression'],
@@ -36,6 +60,7 @@ cLangProductions = {
         ['unary_operator', 'cast_expression'],
         ['SIZEOF', 'unary_expression'],
         ['SIZEOF', '(', 'type_name', ')'],
+        ['ALIGNOF', '(', 'type_name', ')']
     ],
     "unary_operator": [
         ['&'],
@@ -128,14 +153,19 @@ cLangProductions = {
     "declaration": [
         ['declaration_specifiers', ';'],
         ['declaration_specifiers', 'init_declarator_list', ';'],
+        ['static_assert_declaration']
     ],
     "declaration_specifiers": [
-        ['storage_class_specifier', ';'],
+        ['storage_class_specifier'],
         ['storage_class_specifier', 'declaration_specifiers'],
         ['type_specifier'],
         ['type_specifier', 'declaration_specifiers'],
         ['type_qualifier'],
         ['type_qualifier', 'declaration_specifiers'],
+        ['function_specifier'],
+        ['function_specifier', 'declaration_specifiers'],
+        ['alignment_specifier'],
+        ['alignment_specifier', 'declaration_specifiers'],
     ],
     "init_declarator_list": [
         ['init_declarator'],
@@ -149,6 +179,7 @@ cLangProductions = {
         ['TYPEDEF'],
         ['EXTERN'],
         ['STATIC'],
+        ['THREAD_LOCAL'],
         ['AUTO'],
         ['REGISTER'],
     ],
@@ -162,9 +193,13 @@ cLangProductions = {
         ['DOUBLE'],
         ['SIGNED'],
         ['UNSIGNED'],
+        ['BOOL'],
+        ['COMPLEX'],
+        ['IMAGINARY'],
+        ['atomic_type_specifier'],
         ['struct_or_union_specifier'],
         ['enum_specifier'],
-        # ['TYPE_NAME'] ????
+        # ['TYPEDEF_NAME'] ????
     ],
     "struct_or_union_specifier": [
         ["struct_or_union", "IDENTIFIER", '{', 'struct_declaration_list', '}'],
@@ -180,7 +215,9 @@ cLangProductions = {
         ['struct_declaration_list', 'struct_declaration'],
     ],
     "struct_declaration": [
+        ['specifier_qualifier_list', ';'],
         ['specifier_qualifier_list', 'struct_declarator_list'],
+        ['static_assert_declaration']
     ],
     "specifier_qualifier_list": [
         ['type_specifier', 'specifier_qualifier_list'],
@@ -199,7 +236,9 @@ cLangProductions = {
     ],
     "enum_specifier": [
         ["ENUM", '{', 'enumerator_list', '}'],
+        ["ENUM", '{', 'enumerator_list', ',', '}'],
         ["ENUM", 'IDENTIFIER', '{', 'enumerator_list', '}'],
+        ["ENUM", 'IDENTIFIER', '{', 'enumerator_list', ',', '}'],
         ["ENUM", 'IDENTIFIER'],
     ],
     "enumerator_list": [
@@ -210,9 +249,22 @@ cLangProductions = {
         ['IDENTIFIER'],
         ['IDENTIFIER', '=', 'constant_expression'],
     ],
+    "atomic_type_specifier": [
+        ['ATOMIC', '(', 'type_name', ')'],
+    ],
     "type_qualifier": [
         ['CONST'],
+        ['RESTRICT'],
         ['VOLATILE'],
+        ['ATOMIC'],
+    ],
+    "function_specifier": [
+        ['INLINE'],
+        ['NORETURN'],
+    ],
+    "alignment_specifier": [
+        ['ALIGNAS', '(', 'type_name', ')'],
+        ['ALIGNAS', '(', 'constant_expression', ')']
     ],
     "declarator": [
         ['pointer', 'direct_declarator'],
@@ -221,8 +273,15 @@ cLangProductions = {
     "direct_declarator": [
         ['IDENTIFIER'],
         ['(', 'declarator', ')'],
-        ['direct_declarator', '[', 'constant_expression', ']'],
         ['direct_declarator', '[', ']'],
+        ['direct_declarator', '[', '*', ']'],
+        ['direct_declarator', '[', 'STATIC', 'type_qualifier_list', 'assignment_expression', ']'],
+        ['direct_declarator', '[', 'STATIC', 'assignment_expression', ']'],
+        ['direct_declarator', '[', 'type_qualifier_list', '*', ']'],
+        ['direct_declarator', '[', 'type_qualifier_list', 'STATIC', 'assignment_expression', ']'],
+        ['direct_declarator', '[', 'type_qualifier_list', 'assignment_expression', ']'],
+        ['direct_declarator', '[', 'type_qualifier_list', ']'],
+        ['direct_declarator', '[', 'assignment_expression', ']'],
         ['direct_declarator', '(', 'parameter_type_list', ')'],
         ['direct_declarator', '(', 'identifier_list', ')'],
         ['direct_declarator', '(', ')'],
@@ -266,9 +325,21 @@ cLangProductions = {
     "direct_abstract_declarator": [
         ['(', 'abstract_declarator', ')'],
         ['[', ']'],
-        ['[', 'constant_expression', ']'],
+        ['[', '*', ']'],
+        ['[', 'STATIC', 'type_qualifier_list', 'assignment_expression', ']'],
+        ['[', 'STATIC', 'assignment_expression', ']'],
+        ['[', 'type_qualifier_list', 'STATIC', 'assignment_expression', ']'],
+        ['[', 'type_qualifier_list', 'assignment_expression', ']'],
+        ['[', 'type_qualifier_list', ']'],
+        ['[', 'assignment_expression', ']'],
         ['direct_abstract_declarator', '[', ']'],
-        ['direct_abstract_declarator', '[', 'constant_expression', ']'],
+        ['direct_abstract_declarator', '[', '*', ']'],
+        ['direct_abstract_declarator', '[', 'STATIC', 'type_qualifier_list', 'assignment_expression', ']'],
+        ['direct_abstract_declarator', '[', 'STATIC', 'assignment_expression', ']'],
+        ['direct_abstract_declarator', '[', 'type_qualifier_list', 'STATIC', 'assignment_expression', ']'],
+        ['direct_abstract_declarator', '[', 'type_qualifier_list', 'assignment_expression', ']'],
+        ['direct_abstract_declarator', '[', 'type_qualifier_list', ']'],
+        ['direct_abstract_declarator', '[', 'assignment_expression', ']'],
         ['(', ')'],
         ['(', 'parameter_type_list', ')'],
         ['direct_abstract_declarator', '(', ')'],
@@ -280,8 +351,24 @@ cLangProductions = {
         ['{', 'initializer_list', ',', '}'],
     ],
     "initializer_list": [
+        ['designation', 'initializer'],
         ['initializer'],
-        ['initializer_list', 'initializer'],
+        ['initializer_list', ',', 'designation', 'initializer'],
+        ['initializer_list', ',', 'initializer'],
+    ],
+    "designation": [
+        ['designator_list', '='],
+    ],
+    "designator_list": [
+        ['designator'],
+        ['designator_list', 'designator']
+    ],
+    "designator": [
+        ['[', 'constant_expression', ']'],
+        ['.', 'IDENTIFIER'],
+    ],
+    "static_assert_declaration": [
+        ['STATIC_ASSERT', '(', 'constant_expression', ',', 'STRING_LITERAL', ')', ';'],
     ],
     "statement": [
         ['labeled_statement'],
@@ -298,17 +385,15 @@ cLangProductions = {
     ],
     "compound_statement": [
         ['{', '}'],
-        ['{', 'statement_list', '}'],
-        ['{', 'declaration_list', '}'],
-        ['{', 'declaration_list', 'statement_list', '}'],
+        ['{', 'block_item_list', '}'],
     ],
-    "declaration_list": [
+    "block_item_list": [
+        ['block_item'],
+        ['block_item_list', 'block_item'],
+    ],
+    "block_item": [
         ['declaration'],
-        ['declaration_list', 'declaration'],
-    ],
-    "statement_list": [
         ['statement'],
-        ['statement_list', 'statement'],
     ],
     "expression_statement": [
         [';'],
@@ -345,8 +430,10 @@ cLangProductions = {
     "function_definition": [
         ['declaration_specifiers', 'declarator', 'declaration_list', 'compound_statement'],
         ['declaration_specifiers', 'declarator', 'compound_statement'],
-        ['declarator', 'declaration_list', 'compound_statement'],
-        ['declarator', 'compound_statement']
+    ],
+    "declaration_list": [
+        ['declaration'],
+        ['declaration_list', 'declaration'],
     ],
 }
 
@@ -367,9 +454,11 @@ reserved = {
         'for':    'FOR',
         'goto':    'GOTO',
         'if':    'IF',
+        'inline': 'INLINE',
         'int':    'INT',
         'long':    'LONG',
         'register':    'REGISTER',
+        'restrict': 'RESTRICT',
         'return':    'RETURN',
         'short':    'SHORT',
         'signed':    'SIGNED',
@@ -383,14 +472,25 @@ reserved = {
         'void':    'VOID',
         'volatile':    'VOLATILE',
         'while':    'WHILE',
+        "_Alignas": "ALIGNAS",
+        "_Alignof": "ALIGNOF",
+        "_Atomic": "ATOMIC",  
+        "_Bool": "BOOL",           
+        "_Complex": "COMPLEX",         
+        "_Generic": "GENERIC", 
+        "_Imaginary": "IMAGINARY",   
+        "_Noreturn": "NORETURN",   
+        "_Static_assert": "STATIC_ASSERT",  
+        "_Thread_local": "THREAD_LOCAL",    
+        "__func__": "FUNC_NAME",
     }
 
 class CLangLexer(object):
 
     tokens = [
-        'COMMENT',
         'IDENTIFIER',
-        'CONSTANT',
+        'I_CONSTANT',
+        'F_CONSTANT',
         'STRING_LITERAL',
         'ELLIPSIS',
         'RIGHT_ASSIGN',
@@ -417,8 +517,8 @@ class CLangLexer(object):
     ] + list(reserved.values())
 
     # Regular expression rules for simple tokens
-    t_CONSTANT      = r"(0[xX][a-fA-F0-9]+((u|U|l|L)*)?)|([0-9]*\.[0-9]+([Ee][+-]?[0-9]+)?(f|F|l|L)?)|([0-9]+\.[0-9]*([Ee][+-]?[0-9]+)?(f|F|l|L)?)|([0-9]+[Ee][+-]?[0-9]+(f|F|l|L)?)|(0[0-9]+((u|U|l|L)*)?)|([0-9]+((u|U|l|L)*)?)|(L?'(\\.|[^\\'])+')"
-    t_STRING_LITERAL= r'L?"(\\.|[^\\"])*"'
+    t_I_CONSTANT    = r'((0[xX])[a-fA-F0-9]+(((u|U)(l|L|ll|LL)?)|((l|L|ll|LL)(u|U)?))?)|([1-9][0-9]*(((u|U)(l|L|ll|LL)?)|((l|L|ll|LL)(u|U)?))?)|(0[0-7]*(((u|U)(l|L|ll|LL)?)|((l|L|ll|LL)(u|U)?))?)|((u|U|L)?\'([^\'\\\n]|(\\([\'"?\\abfnrtv]|[0-7]{1,3}|x[a-fA-F0-9]+)))+\')'
+    t_STRING_LITERAL= r"((u8|u|U|L)?\"([^\"\\\n]|(\\(['\"?\\abfnrtv]|[0-7]{1,3}|x[a-fA-F0-9]+)))*\"[ \t\v\n\f]*)+"
     t_ELLIPSIS      = r'\.\.\.'
     t_RIGHT_ASSIGN  = r'>>='
     t_LEFT_ASSIGN   = r'<<='
@@ -445,13 +545,17 @@ class CLangLexer(object):
     literals = ";{},:=()[].&!~-+*/%<>^|?"
 
     def t_IDENTIFIER(self,t):
-        r'[a-zA-Z_]([a-zA-Z_]|[0-9])*'
+        r'[a-zA-Z_][a-zA-Z_0-9]*'
         t.type = reserved.get(t.value, 'IDENTIFIER')
         return t
     
     def t_COMMENT(self,t):
         r'//.*'
         pass
+
+    def t_F_CONSTANT(self, t):
+        r'([0-9]+([Ee][+-]?[0-9]+)(f|F|l|L)?)|([0-9]*\.[0-9]+([Ee][+-]?[0-9]+)?(f|F|l|L)?)|([0-9]+\.([Ee][+-]?[0-9]+)?(f|F|l|L)?)|((0[xX])[a-fA-F0-9]+([Pp][+-]?[0-9]+)(f|F|l|L)?)|((0[xX])[a-fA-F0-9]*\.[a-fA-F0-9]+([Pp][+-]?[0-9]+)(f|F|l|L)?)|((0[xX])[a-fA-F0-9]+\.([Pp][+-]?[0-9]+)(f|F|l|L)?)'
+        return t
 
     def t_MULTI_LINE_COMMENT(self,t):
         r'/[*]'
@@ -465,7 +569,6 @@ class CLangLexer(object):
         l.skip(2)
         pass
 
-    # A string t_IDENTIFIER    = r'[a-zA-Z_]([a-zA-Z_]|[0-9])*'containing ignored characters (spaces, tabs and newlines)
     t_ignore  = ' \t\v\n\f'
 
     # Error handling rule
@@ -489,12 +592,7 @@ if __name__ == "__main__":
     l = CLangLexer()
     l.build()           # Build the lexer
     test =  '''
-            int main()
-            {
-                /*print hello */
-                printf("Hello World", &);
-                return 0;
-            }
+            192412e-1010 0.001 .123e+10 10. 11.e-23 '\\na aa' 126310981234 0x9faA1 07123
             '''
     l.input(test)     # Test it
 
