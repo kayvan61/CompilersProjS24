@@ -144,7 +144,7 @@ class GFG:
                     src_node = end_node if prev_node.is_call else prev_node
                     self.add_edge(src_node, new_node, edge_label)
 
-                    if term in self.lexer.tokens or (len(term) == 1 and term in self.lexer.literals):
+                    if term in self.lexer.tokens or (len(term) == 1 and hasattr(self.lexer, 'literals') and  term in self.lexer.literals):
                         # term is a terminal, next edge should be a scan edge
                         new_node.is_scan = True
                         edge_label = f"{term}"

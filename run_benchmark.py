@@ -63,10 +63,10 @@ def run_benchmarks(parser, generator, max_str_len, num_repeat):
     return (input_len, avg_times, avg_mems)
 
 def generate_b_strings():
-    count = 2
+    count = 10
     while True:
         yield 'b' * count
-        count += 2
+        count += 10
 
 def old_get_b_grammar_parsers():
     res = []
@@ -105,17 +105,17 @@ def old_get_b_grammar_parsers():
 def get_b_grammar_parsers():
     res = []
 
-    res.append((['python3', './parse_programs/gfg_parse.py', '--topdown', '--input', ''], "gfg_top_down_sppf"))
-    res.append((['python3', './parse_programs/gfg_parse.py', '--bottomup', '--input', ''], "gfg_bottom_up_sppf"))
+    res.append((['python3', './parse_programs/gfg_parse.py', '--topdown', '--input', ''], "gfg_offline_sppf"))
+    res.append((['python3', './parse_programs/gfg_parse.py', '--bottomup', '--input', ''], "gfg_online_sppf"))
     res.append((['python3', './parse_programs/gfg_parse.py', '--single', '--input', ''], "gfg_single_tree"))
-    res.append((['python3', './parse_programs/lark_parse.py', '--earley', '--input', ''], "lark_earley_sppf"))
+    res.append((['python3', './parse_programs/lark_parse.py', '--earley', '--input', ''], "lark_online_sppf"))
     res.append((['python3', './parse_programs/lark_parse.py', '--cyk', '--input', ''], "lark_cyk_single"))
     res.append((['python3', './parse_programs/spark_parse.py', '--input', ''], "spark_earley_single"))
 
     return res
 
 def generate_a_strings():
-    count = 1
+    count = 20
     while True:
         yield 'a' * count
         count += 20
@@ -124,10 +124,10 @@ def generate_a_strings():
 def get_a_grammar_parsers():
     res = []
 
-    res.append((['python3', './parse_programs/gfg_parse.py', '--grammar', 'a_grammar', '--topdown', '--input', ''], "gfg_top_down_sppf"))
-    res.append((['python3', './parse_programs/gfg_parse.py', '--grammar', 'a_grammar', '--bottomup', '--input', ''], "gfg_bottom_up_sppf"))
+    res.append((['python3', './parse_programs/gfg_parse.py', '--grammar', 'a_grammar', '--topdown', '--input', ''], "gfg_offline_sppf"))
+    res.append((['python3', './parse_programs/gfg_parse.py', '--grammar', 'a_grammar', '--bottomup', '--input', ''], "gfg_online_sppf"))
     res.append((['python3', './parse_programs/gfg_parse.py', '--grammar', 'a_grammar', '--single', '--input', ''], "gfg_single_tree"))
-    res.append((['python3', './parse_programs/lark_parse.py', '--grammar', 'a_grammar', '--earley', '--input', ''], "lark_earley_sppf"))
+    res.append((['python3', './parse_programs/lark_parse.py', '--grammar', 'a_grammar', '--earley', '--input', ''], "lark_online_sppf"))
     # res.append((['python3', './parse_programs/lark_parse.py', '--grammar', 'a_grammar', '--cyk', '--input', ''], "lark_cyk_single"))
     res.append((['python3', './parse_programs/spark_parse.py', '--grammar', 'a_grammar', '--input', ''], "spark_earley_single"))
 
