@@ -380,7 +380,19 @@ grammars = {
 
     COMMENT.10: /\/\/.*/
     %ignore COMMENT
+
+    %import common.C_COMMENT
+    %ignore C_COMMENT
     ''',
+    "python_grammar": '''
+        %import python.single_input
+        %import python.file_input
+        %import python.eval_input
+
+        start : single_input
+              | file_input
+              | eval_input
+    '''
 }
 
 # @profile
