@@ -586,21 +586,55 @@ class CLangLexer(object):
     # Test it output
     def token(self):
         return self.lexer.token()
+    
+
+import math
+
+def round_up_to_multiple_of_4(x):
+    return int(math.ceil(x / 4.0)) * 4
+
+
+def print_prod_rhs(prod):
+    for term in prod:
+        if len(term) == 1:
+            print(f"\"{term}\" ", end="")
+        else:
+            print(f"{term} ", end="")
+    print()
 
 if __name__ == "__main__":
     # Build the lexer and try it out
-    l = CLangLexer()
-    l.build()           # Build the lexer
-    test =  '''
-            192412e-1010 0.001 .123e+10 10. 11.e-23 '\\na aa' 126310981234 0x9faA1 07123
-            '''
-    l.input(test)     # Test it
+    # l = CLangLexer()
+    # l.build()           # Build the lexer
+    # test =  '''
+    #         192412e-1010 0.001 .123e+10 10. 11.e-23 '\\na aa' 126310981234 0x9faA1 07123
+    #         '''
+    # l.input(test)     # Test it
 
-    while True:
-        tok = l.token()
-        if not tok:
-            print("-----------")
-            break
-        print(tok.type, tok.value)
+    # while True:
+    #     tok = l.token()
+    #     if not tok:
+    #         print("-----------")
+    #         break
+    #     print(tok.type, tok.value)
 
     # print(l.tokens)
+
+
+
+    # Convert GFG productions to Lark productions
+    for non_terminal, prods in cLangProductions.items():
+        name_len = (len(non_terminal) + 1)
+        num_spaces = round_up_to_multiple_of_4(name_len)
+
+        diff_space = ' ' * (num_spaces - name_len)
+        spaces = ' ' * num_spaces
+
+        print(f"{non_terminal}{diff_space} : ", end = "")
+
+        print_prod_rhs(prods[0])
+
+        for i in range(1, len(prods)):
+            prod = prods[i]
+            print(f"{spaces}| ", end="")
+            print_prod_rhs(prod)

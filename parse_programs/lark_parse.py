@@ -14,7 +14,373 @@ grammars = {
                  a : a A | A
 
                  A: "a"
-                 '''
+                 ''',
+    "c_lang_grammar": 
+    '''
+    start   : program 
+    program : function_definition 
+            | program function_definition 
+            | statement 
+            | program statement 
+    primary_expression  : IDENTIFIER 
+                        | constant 
+                        | string 
+                        | "(" expression ")" 
+                        | generic_selection 
+    constant    : I_CONSTANT 
+                | F_CONSTANT 
+    string  : STRING_LITERAL 
+            | FUNC_NAME 
+    generic_selection   : GENERIC "(" assignment_expression "," generic_assoc_list ")" 
+    generic_assoc_list  : generic_association 
+                        | generic_assoc_list "," generic_association 
+    generic_association : type_name ":" assignment_expression 
+                        | DEFAULT ":" assignment_expression 
+    postfix_expression  : primary_expression 
+                        | postfix_expression "[" expression "]" 
+                        | postfix_expression "(" ")" 
+                        | postfix_expression "(" argument_expression_list ")" 
+                        | postfix_expression "." IDENTIFIER 
+                        | postfix_expression PTR_OP IDENTIFIER 
+                        | postfix_expression INC_OP 
+                        | postfix_expression DEC_OP 
+                        | "(" type_name ")" "{" initializer_list "}" 
+                        | "(" type_name ")" "{" initializer_list "," "}" 
+    argument_expression_list    : assignment_expression 
+                                | argument_expression_list "," assignment_expression 
+    unary_expression    : postfix_expression 
+                        | INC_OP unary_expression 
+                        | DEC_OP unary_expression 
+                        | unary_operator cast_expression 
+                        | SIZEOF unary_expression 
+                        | SIZEOF "(" type_name ")" 
+                        | ALIGNOF "(" type_name ")" 
+    unary_operator  : "&" 
+                    | "*" 
+                    | "+" 
+                    | "-" 
+                    | "~" 
+                    | "!" 
+    cast_expression : unary_expression 
+                    | "(" type_name ")" cast_expression 
+    multiplicative_expression   : cast_expression 
+                                | multiplicative_expression "*" cast_expression 
+                                | multiplicative_expression "/" cast_expression 
+                                | multiplicative_expression "%" cast_expression 
+    additive_expression : multiplicative_expression 
+                        | additive_expression "+" multiplicative_expression 
+                        | additive_expression "-" multiplicative_expression 
+    shift_expression    : additive_expression 
+                        | shift_expression LEFT_OP additive_expression 
+                        | shift_expression RIGHT_OP additive_expression 
+    relation_expression : shift_expression 
+                        | relation_expression "<" shift_expression 
+                        | relation_expression ">" shift_expression 
+                        | relation_expression LE_OP shift_expression 
+                        | relation_expression GE_OP shift_expression 
+    equality_expression : relation_expression 
+                        | equality_expression EQ_OP relation_expression 
+                        | equality_expression NE_OP relation_expression 
+    and_expression  : equality_expression 
+                    | and_expression "&" equality_expression 
+    exclusive_or_expression : and_expression 
+                            | exclusive_or_expression "^" and_expression 
+    inclusive_or_expression : exclusive_or_expression 
+                            | inclusive_or_expression "|" exclusive_or_expression 
+    logical_and_expression  : inclusive_or_expression 
+                            | logical_and_expression AND_OP inclusive_or_expression 
+    logical_or_expression   : logical_and_expression 
+                            | logical_or_expression OR_OP logical_and_expression 
+    conditional_expression  : logical_or_expression 
+                            | logical_or_expression "?" expression ":" conditional_expression 
+    assignment_expression   : conditional_expression 
+                            | unary_expression assignment_operator assignment_expression 
+    assignment_operator : "=" 
+                        | MUL_ASSIGN 
+                        | DIV_ASSIGN 
+                        | MOD_ASSIGN 
+                        | ADD_ASSIGN 
+                        | SUB_ASSIGN 
+                        | LEFT_ASSIGN 
+                        | RIGHT_ASSIGN 
+                        | AND_ASSIGN 
+                        | XOR_ASSIGN 
+                        | OR_ASSIGN 
+    expression  : assignment_expression 
+                | expression "," assignment_expression 
+    constant_expression : conditional_expression 
+    declaration : declaration_specifiers ";" 
+                | declaration_specifiers init_declarator_list ";" 
+                | static_assert_declaration 
+    declaration_specifiers  : storage_class_specifier 
+                            | storage_class_specifier declaration_specifiers 
+                            | type_specifier 
+                            | type_specifier declaration_specifiers 
+                            | type_qualifier 
+                            | type_qualifier declaration_specifiers 
+                            | function_specifier 
+                            | function_specifier declaration_specifiers 
+                            | alignment_specifier 
+                            | alignment_specifier declaration_specifiers 
+    init_declarator_list    : init_declarator 
+                            | init_declarator_list "," init_declarator 
+    init_declarator : declarator 
+                    | declarator "=" initializer 
+    storage_class_specifier : TYPEDEF 
+                            | EXTERN 
+                            | STATIC 
+                            | THREAD_LOCAL 
+                            | AUTO 
+                            | REGISTER 
+    type_specifier  : VOID 
+                    | CHAR 
+                    | SHORT 
+                    | INT 
+                    | LONG 
+                    | FLOAT 
+                    | DOUBLE 
+                    | SIGNED 
+                    | UNSIGNED 
+                    | BOOL 
+                    | COMPLEX 
+                    | IMAGINARY 
+                    | atomic_type_specifier 
+                    | struct_or_union_specifier 
+                    | enum_specifier 
+    struct_or_union_specifier   : struct_or_union IDENTIFIER "{" struct_declaration_list "}" 
+                                | struct_or_union "{" struct_declaration_list "}" 
+                                | struct_or_union IDENTIFIER 
+    struct_or_union : STRUCT 
+                    | UNION 
+    struct_declaration_list : struct_declaration 
+                            | struct_declaration_list struct_declaration 
+    struct_declaration  : specifier_qualifier_list ";" 
+                        | specifier_qualifier_list struct_declarator_list 
+                        | static_assert_declaration 
+    specifier_qualifier_list    : type_specifier specifier_qualifier_list 
+                                | type_specifier 
+                                | type_qualifier specifier_qualifier_list 
+                                | type_qualifier 
+    struct_declarator_list  : struct_declarator 
+                            | struct_declarator_list "," struct_declarator 
+    struct_declarator   : declarator 
+                        | ":" constant_expression 
+                        | declarator ":" constant_expression 
+    enum_specifier  : ENUM "{" enumerator_list "}" 
+                    | ENUM "{" enumerator_list "," "}" 
+                    | ENUM IDENTIFIER "{" enumerator_list "}" 
+                    | ENUM IDENTIFIER "{" enumerator_list "," "}" 
+                    | ENUM IDENTIFIER 
+    enumerator_list : enumerator 
+                    | enumerator_list enumerator 
+    enumerator  : IDENTIFIER 
+                | IDENTIFIER "=" constant_expression 
+    atomic_type_specifier   : ATOMIC "(" type_name ")" 
+    type_qualifier  : CONST 
+                    | RESTRICT 
+                    | VOLATILE 
+                    | ATOMIC 
+    function_specifier  : INLINE 
+                        | NORETURN 
+    alignment_specifier : ALIGNAS "(" type_name ")" 
+                        | ALIGNAS "(" constant_expression ")" 
+    declarator  : pointer direct_declarator 
+                | direct_declarator 
+    direct_declarator   : IDENTIFIER 
+                        | "(" declarator ")" 
+                        | direct_declarator "[" "]" 
+                        | direct_declarator "[" "*" "]" 
+                        | direct_declarator "[" STATIC type_qualifier_list assignment_expression "]" 
+                        | direct_declarator "[" STATIC assignment_expression "]" 
+                        | direct_declarator "[" type_qualifier_list "*" "]" 
+                        | direct_declarator "[" type_qualifier_list STATIC assignment_expression "]" 
+                        | direct_declarator "[" type_qualifier_list assignment_expression "]" 
+                        | direct_declarator "[" type_qualifier_list "]" 
+                        | direct_declarator "[" assignment_expression "]" 
+                        | direct_declarator "(" parameter_type_list ")" 
+                        | direct_declarator "(" identifier_list ")" 
+                        | direct_declarator "(" ")" 
+    pointer : "*" 
+            | "*" type_qualifier_list 
+            | "*" pointer 
+            | "*" type_qualifier_list pointer 
+    type_qualifier_list : type_qualifier 
+                        | type_qualifier_list type_qualifier 
+    parameter_type_list : parameter_list 
+                        | parameter_list "," ELLIPSIS 
+    parameter_list  : parameter_declaration 
+                    | parameter_list "," parameter_declaration 
+    parameter_declaration   : declaration_specifiers declarator 
+                            | declaration_specifiers abstract_declarator 
+                            | declaration_specifiers 
+    identifier_list : IDENTIFIER 
+                    | identifier_list IDENTIFIER 
+    type_name   : specifier_qualifier_list 
+                | specifier_qualifier_list abstract_declarator 
+    abstract_declarator : pointer 
+                        | direct_abstract_declarator 
+                        | pointer direct_abstract_declarator 
+    direct_abstract_declarator  : "(" abstract_declarator ")" 
+                                | "[" "]" 
+                                | "[" "*" "]" 
+                                | "[" STATIC type_qualifier_list assignment_expression "]" 
+                                | "[" STATIC assignment_expression "]" 
+                                | "[" type_qualifier_list STATIC assignment_expression "]" 
+                                | "[" type_qualifier_list assignment_expression "]" 
+                                | "[" type_qualifier_list "]" 
+                                | "[" assignment_expression "]" 
+                                | direct_abstract_declarator "[" "]" 
+                                | direct_abstract_declarator "[" "*" "]" 
+                                | direct_abstract_declarator "[" STATIC type_qualifier_list assignment_expression "]" 
+                                | direct_abstract_declarator "[" STATIC assignment_expression "]" 
+                                | direct_abstract_declarator "[" type_qualifier_list STATIC assignment_expression "]" 
+                                | direct_abstract_declarator "[" type_qualifier_list assignment_expression "]" 
+                                | direct_abstract_declarator "[" type_qualifier_list "]" 
+                                | direct_abstract_declarator "[" assignment_expression "]" 
+                                | "(" ")" 
+                                | "(" parameter_type_list ")" 
+                                | direct_abstract_declarator "(" ")" 
+                                | direct_abstract_declarator "(" parameter_type_list ")" 
+    initializer : assignment_expression 
+                | "{" initializer_list "}" 
+                | "{" initializer_list "," "}" 
+    initializer_list    : designation initializer 
+                        | initializer 
+                        | initializer_list "," designation initializer 
+                        | initializer_list "," initializer 
+    designation : designator_list "=" 
+    designator_list : designator 
+                    | designator_list designator 
+    designator  : "[" constant_expression "]" 
+                | "." IDENTIFIER 
+    static_assert_declaration   : STATIC_ASSERT "(" constant_expression "," STRING_LITERAL ")" ";" 
+    statement   : labeled_statement 
+                | compound_statement 
+                | expression_statement 
+                | selection_statement 
+                | iteration_statement 
+                | jump_statement 
+    labeled_statement   : IDENTIFIER ":" statement 
+                        | CASE constant_expression ":" statement 
+                        | DEFAULT ":" statement 
+    compound_statement  : "{" "}" 
+                        | "{" block_item_list "}" 
+    block_item_list : block_item 
+                    | block_item_list block_item 
+    block_item  : declaration 
+                | statement 
+    expression_statement    : ";" 
+                            | expression ";" 
+    selection_statement : IF "(" expression ")" statement 
+                        | IF "(" expression ")" statement ELSE statement 
+                        | SWITCH "(" expression ")" statement 
+    iteration_statement : WHILE "(" expression ")" statement 
+                        | DO statement WHILE "(" expression ")" ";" 
+                        | FOR "(" expression_statement expression_statement ")" statement 
+                        | FOR "(" expression_statement expression_statement expression ")" statement 
+                        | FOR "(" declaration expression_statement ")" statement 
+                        | FOR "(" declaration expression_statement expression ")" statement 
+    jump_statement  : GOTO IDENTIFIER 
+                    | CONTINUE ";" 
+                    | BREAK ";" 
+                    | RETURN ";" 
+                    | RETURN expression ";" 
+    translation_unit    : external_declaration 
+                        | translation_unit external_declaration 
+    external_declaration    : function_definition 
+                            | declaration 
+    function_definition : declaration_specifiers declarator declaration_list compound_statement 
+                        | declaration_specifiers declarator compound_statement 
+    declaration_list    : declaration 
+                        | declaration_list declaration
+
+
+    # start of tokens
+
+    AUTO.9: "auto"
+    BREAK.9: "break"
+    CASE.9: "case"
+    CHAR.9: "char"
+    CONST.9: "const"
+    CONTINUE.9: "continue"
+    DEFAULT.9: "default"
+    DO.9: "do"
+    DOUBLE.9: "double"
+    ELSE.9: "else"
+    ENUM.9: "enum"
+    EXTERN.9: "extern"
+    FLOAT.9: "float"
+    FOR.9: "for"
+    GOTO.9: "goto"
+    IF.9: "if"
+    INLINE.9: "inline"
+    INT.9: "int"
+    LONG.9: "long"
+    REGISTER.9: "register"
+    RESTRICT.9: "restrict"
+    RETURN.9: "return"
+    SHORT.9: "short"
+    SIGNED.9: "signed"
+    SIZEOF.9: "sizeof"
+    STATIC.9: "static"
+    STRUCT.9: "struct"
+    SWITCH.9: "switch"
+    TYPEDEF.9: "typedef"
+    UNION.9: "union"
+    UNSIGNED.9: "unsigned"
+    VOID.9: "void"
+    VOLATILE.9: "volatile"
+    WHILE.9: "while"
+    ALIGNAS.9: "_Alignas"
+    ALIGNOF.9: "_Alignof"
+    ATOMIC.9: "_Atomic"
+    BOOL.9: "_Bool"
+    COMPLEX.9: "_Complex"    
+    GENERIC.9: "_Generic"
+    IMAGINARY.9: "_Imaginary"
+    NORETURN.9: "_Noreturn"
+    STATIC_ASSERT.9: "_Static_assert"
+    THREAD_LOCAL.9: "_Thread_local"
+    FUNC_NAME.9: "__func__"
+
+    IDENTIFIER: /[a-zA-Z_][a-zA-Z_0-9]*/
+
+    # TODO MISSING HEX, OCTAL ESCAPES
+    I_CONSTANT.7: /((0[xX])[a-fA-F0-9]+(((u|U)(l|L|ll|LL)?)|((l|L|ll|LL)(u|U)?))?)|([1-9][0-9]*(((u|U)(ll|LL|l|L)?)|((ll|LL|l|L)(u|U)?))?)|(0[0-7]*(((u|U)(ll|LL|l|L)?)|((ll|LL|l|L)(u|U)?))?)|((u|U|L)?'([^'\\\n]|\\[\'"?\\abfnrtv])+')/x
+    F_CONSTANT.8: /([0-9]+([Ee][+-]?[0-9]+)(f|F|l|L)?)|([0-9]*\.[0-9]+([Ee][+-]?[0-9]+)?(f|F|l|L)?)|([0-9]+\.([Ee][+-]?[0-9]+)?(f|F|l|L)?)|((0[xX])[a-fA-F0-9]+([Pp][+-]?[0-9]+)(f|F|l|L)?)|((0[xX])[a-fA-F0-9]*\.[a-fA-F0-9]+([Pp][+-]?[0-9]+)(f|F|l|L)?)|((0[xX])[a-fA-F0-9]+\.([Pp][+-]?[0-9]+)(f|F|l|L)?)/
+
+    # TODO MISSING HEX, OCTAL ESCAPES
+    STRING_LITERAL: /((u8|u|U|L)?"([^"\\\n]|\\['\"?\\abfnrtv])*"[ \t\v\n\f]*)+/x
+
+    ELLIPSIS: "..."
+    RIGHT_ASSIGN.3: ">>="
+    LEFT_ASSIGN.3: "<<="
+    ADD_ASSIGN.3: "+="
+    SUB_ASSIGN.3: "-="
+    MUL_ASSIGN.3: "*="
+    DIV_ASSIGN.3: "/="
+    MOD_ASSIGN.3: "%="
+    AND_ASSIGN.3: "&="
+    XOR_ASSIGN.3: "^="
+    OR_ASSIGN.3: "|="
+    RIGHT_OP.2: ">>"
+    LEFT_OP.2: "<<"
+    INC_OP.2: "++"
+    DEC_OP.2: "--"
+    PTR_OP.2: "->"
+    AND_OP.2: "&&"
+    OR_OP.2: "||"
+    LE_OP.2: "<="
+    GE_OP.2: ">="
+    EQ_OP.2: "=="
+    NE_OP.2: "!="
+
+    WHITE_SPACE.10: /[ \t\v\n\f]/x
+    %ignore WHITE_SPACE
+
+    COMMENT.10: /\/\/.*/
+    %ignore COMMENT
+    ''',
 }
 
 # @profile
@@ -26,9 +392,11 @@ def main(input_string, grammar, args):
     if args.cyk:
         parser = Lark(grammar, parser='cyk', ordered_sets=False)
     elif args.earley:
-        parser = Lark(grammar, parser='earley', ambiguity="forest", ordered_sets=False)
+        print("Earley")
+        parser = Lark(grammar, parser='earley', ambiguity="forest", lexer='basic')
 
-    parser.parse(input_string)
+    res = parser.parse(input_string)
+    print(res)
 
     end_time = time.time()
 
@@ -49,5 +417,7 @@ if __name__ == "__main__":
     parser.add_argument('--input', type=str, required=True, help='input string to parse')
 
     args = parser.parse_args()
+    
 
+    print(args.input)
     main(args.input, grammars[args.grammar], args)
