@@ -65,8 +65,10 @@ def run_benchmarks(parser, generator, max_str_len, num_repeat):
 def generate_b_strings():
     count = 10
     while True:
+        print(count)
         yield 'b' * count
         count += 10
+        
 
 def old_get_b_grammar_parsers():
     res = []
@@ -117,6 +119,7 @@ def get_b_grammar_parsers():
 def generate_a_strings():
     count = 20
     while True:
+        print(count)
         yield 'a' * count
         count += 20
 
@@ -124,10 +127,10 @@ def generate_a_strings():
 def get_a_grammar_parsers():
     res = []
 
-    res.append((['python3', './parse_programs/gfg_parse.py', '--grammar', 'a_grammar', '--topdown', '--input', ''], "gfg_offline_sppf"))
-    res.append((['python3', './parse_programs/gfg_parse.py', '--grammar', 'a_grammar', '--bottomup', '--input', ''], "gfg_online_sppf"))
-    res.append((['python3', './parse_programs/gfg_parse.py', '--grammar', 'a_grammar', '--single', '--input', ''], "gfg_single_tree"))
-    res.append((['python3', './parse_programs/lark_parse.py', '--grammar', 'a_grammar', '--earley', '--input', ''], "lark_online_sppf"))
+    # res.append((['python3', './parse_programs/gfg_parse.py', '--grammar', 'a_grammar', '--topdown', '--input', ''], "gfg_offline_sppf"))
+    # res.append((['python3', './parse_programs/gfg_parse.py', '--grammar', 'a_grammar', '--bottomup', '--input', ''], "gfg_online_sppf"))
+    # res.append((['python3', './parse_programs/gfg_parse.py', '--grammar', 'a_grammar', '--single', '--input', ''], "gfg_single_tree"))
+    # res.append((['python3', './parse_programs/lark_parse.py', '--grammar', 'a_grammar', '--earley', '--input', ''], "lark_online_sppf"))
     # res.append((['python3', './parse_programs/lark_parse.py', '--grammar', 'a_grammar', '--cyk', '--input', ''], "lark_cyk_single"))
     res.append((['python3', './parse_programs/spark_parse.py', '--grammar', 'a_grammar', '--input', ''], "spark_earley_single"))
 
@@ -161,5 +164,5 @@ if __name__ == "__main__":
     max_size = args.maxSize
 
 
-    run_benchmarks_all_algorithms("b_grammar", get_b_grammar_parsers(), generate_b_strings, max_size, num_repeats)
+    # run_benchmarks_all_algorithms("b_grammar", get_b_grammar_parsers(), generate_b_strings, max_size, num_repeats)
     run_benchmarks_all_algorithms("a_grammar", get_a_grammar_parsers(), generate_a_strings, max_size, num_repeats)

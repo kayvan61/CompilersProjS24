@@ -3,3 +3,4 @@ gfg/
 env/
 *_grammar
 *plots/
+*.lark
