@@ -346,8 +346,16 @@ class GFG:
 
             # if len(next_set) == 0:
             #     print("failed to advance on token ", tok)
+            #     for element in sigma_sets[-1]:
+            #         node_label, tag = element
+            #         node = self.nodes[node_label]
+
+            #         #if node.is_scan:
+            #         print( node.long_name)
+
+            #     return False
             # else:
-            #     print(tok.value)
+            #     print('tok', tok)
 
             # append the next sigma set and map end to call
             sigma_sets.append(next_set)
@@ -1124,7 +1132,7 @@ if __name__ == "__main__":
     #test_gfg = GFG(ExprLexer())
     # test_gfg = GFG(ABLexer())
     # test_gfg = GFG(CLangLexer())
-    test_gfg = GFG(PythonLexer())
+    test_gfg = GFG(PythonLexer(), use_pydot=False)
 
     # productions = {
     #     "S": [["A", "b"], ["b", "A"]],
@@ -1184,16 +1192,20 @@ if __name__ == "__main__":
     # if test_gfg.use_pydot:
     #     test_gfg.graph.write_png("output.png")
 
-    data =  '''
-            print(5)
-            '''
-    print(f"is {data} in language: {test_gfg.recognize_string(data)}")
+    with open('gfg.py', 'r') as file:
+        file_contents = file.read()
+
+    # print(file_contents)
+
+    data = file_contents
+
+    # print(f"is in language: {test_gfg.recognize_string(data)}")
     # print(f"{data} parse tree:")
     # print_tree(test_gfg.parse_string(data))
 
 
     # sppf = test_gfg.parse_top_down(data)
     # sppf.graph.write_png("sppf.png")
-    # f_sppf = test_gfg.sppf_forward_inference(data)
+    f_sppf = test_gfg.sppf_forward_inference(data)
     # # f_sppf = test_gfg.sppf_forward(data)
     # f_sppf.graph.write_png("sppf_forward.png")

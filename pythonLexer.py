@@ -7,23 +7,28 @@ pythonProductions = {
         ['eval_input'],  
     ],
     "single_input": [
-        ['NEWLINE'],
+        # ['NEWLINE'],
         ['simple_stmt'],
-        ['compound_stmt', 'NEWLINE'],
+        ['compound_stmt'],
+        # ['compound_stmt', 'NEWLINE'],
     ],
     "file_input": [
-        ['NEWLINE'],
+        # ['NEWLINE'],
         ['stmt'],
-        ['file_input', 'NEWLINE'],
+        ['file_input'],
+        # ['file_input', 'NEWLINE'],
         ['file_input', 'stmt'],
     ],
     "eval_input": [
-        ['testlist', 'NEWLINE'],
+        # ['testlist', 'NEWLINE'],
+        ['testlist']
     ],
 
     "decorator": [
-        ['@', 'dotted_name', 'NEWLINE'],
-        ['@', 'dotted_name', '(', 'arguments', ')', 'NEWLINE'],
+        # ['@', 'dotted_name', 'NEWLINE'],
+        # ['@', 'dotted_name', '(', 'arguments', ')', 'NEWLINE'],
+        ['@', 'dotted_name'],
+        ['@', 'dotted_name', '(', 'arguments', ')'],
     ],
     "decorators": [
         ['decorator'],
@@ -126,8 +131,10 @@ pythonProductions = {
         ['compound_stmt'],
     ],
     "simple_stmt": [
-        ['small_stmt', 'small_stmt_list', 'NEWLINE'],
-        ['small_stmt', 'small_stmt_list', ';', 'NEWLINE'],
+        # ['small_stmt', 'small_stmt_list', 'NEWLINE'],
+        # ['small_stmt', 'small_stmt_list', ';', 'NEWLINE'],
+        ['small_stmt', 'small_stmt_list'],
+        ['small_stmt', 'small_stmt_list', ';'],
     ],
     "small_stmt_list": [
         [],
@@ -359,7 +366,8 @@ pythonProductions = {
     ],
 
     "match_stmt": [
-        ['MATCH', 'test', ':', 'NEWLINE', 'cases'] # TODO MISSING INDENT DEDENT
+        # ['MATCH', 'test', ':', 'NEWLINE', 'cases'] # TODO MISSING INDENT DEDENT
+        ['MATCH', 'test', ':', 'cases']
     ],
     "cases": [
         ['case'],
@@ -478,7 +486,8 @@ pythonProductions = {
 
     "suite": [
         ['simple_stmt'],
-        ['NEWLINE', 'stmt_list'], # TODO MISSING INDENT DEDENT
+        # ['NEWLINE', 'stmt_list'], # TODO MISSING INDENT DEDENT
+        ['stmt_list'],
     ],
     "stmt_list": [
         ['stmt'],
@@ -835,6 +844,7 @@ pythonProductions = {
         ['MATCH'],
         ['CASE'],
         ['TYPE'],
+        ['_']
     ],
 
 
@@ -928,9 +938,7 @@ class PythonLexer(object):
     # Regular expression rules for simple tokens
 
     t_DEC_NUMBER    = r'([1-9]([_]?[0-9])*)|[0]+([_]?[0])*'
-    t_STRING        = r'([uUbBfF]?[rR]?|[rR][uUbBfF])("(?!"").*?(?<!\\)(\\\\)*?"|\'(?!\'\').*?(?<!\\)(\\\\)*?\')' 
-    t_LONG_STRING   = r'([uUbBfF]?[rR]?|[rR][uUbBfF])("""(.|\n)*?(?<!\\)(\\\\)*?"""|\'\'\'(.|\n)*?(?<!\\)(\\\\)*?\'\'\')'
-    t_NEWLINE		= r'\r?\n[\t ]*'
+    # t_NEWLINE		= r'(\r?\n[\t ]*|\#[^\n]*)+'
     # t_INDNET		= r''
     # t_DEDENT		= r''
     t_EQEQUAL		= r'=='
@@ -960,6 +968,18 @@ class PythonLexer(object):
 
     literals = "()[]:,;+-*/|&<>=.%{}~^@!"
 
+    def t_NEWLINE(self, t):
+        r'(\r?\n[\t ]*|\#[^\n]*)+'
+        pass
+
+    def t_STRING(self, t):
+        r'([uUbBfF]?[rR]?|[rR][uUbBfF])("(?!"").*?(?<!\\)(\\\\)*?"|\'(?!\'\').*?(?<!\\)(\\\\)*?\')' 
+        return t
+    
+    def t_LONG_STRING(self, t): 
+        r'([uUbBfF]?[rR]?|[rR][uUbBfF])("""(.|\n)*?(?<!\\)(\\\\)*?"""|\'\'\'(.|\n)*?(?<!\\)(\\\\)*?\'\'\')'
+        return t
+
     def t_NAME(self,t):
         r'[^\W\d]\w*'
         t.type = reserved.get(t.value, 'NAME')
@@ -985,9 +1005,9 @@ class PythonLexer(object):
         r'([0-9]([_]?[0-9])*[eE][+-][0-9]([_]?[0-9])*)|(((\.[0-9]([_]?[0-9])*)|([0-9]([_]?[0-9])*\.[0-9]([_]?[0-9])*))([eE][+-][0-9]([_]?[0-9])*)?)'
         return t
 
-    def t_COMMENT(self,t):
-        r'\#[^\n]*'
-        pass
+    # def t_COMMENT(self,t):
+    #     r'\#[^\n]*'
+    #     pass
 
     t_ignore  = ' \t\f'
 
@@ -1035,7 +1055,7 @@ if __name__ == "__main__":
                123401243e-123j .0123J 123j 123143.0j 12.1230E+12J
                f"testing {test} one two three" 'hello \t world'
 
-                """
+                f"""
                 test
                 """
 
