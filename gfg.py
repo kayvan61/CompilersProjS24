@@ -1192,14 +1192,14 @@ if __name__ == "__main__":
     # if test_gfg.use_pydot:
     #     test_gfg.graph.write_png("output.png")
 
-    with open('gfg.py', 'r') as file:
+    with open('ab_lexer.py', 'r') as file:
         file_contents = file.read()
 
     # print(file_contents)
 
     data = file_contents
 
-    # print(f"is in language: {test_gfg.recognize_string(data)}")
+    print(f"is in language: {test_gfg.recognize_string(data)}")
     # print(f"{data} parse tree:")
     # print_tree(test_gfg.parse_string(data))
 

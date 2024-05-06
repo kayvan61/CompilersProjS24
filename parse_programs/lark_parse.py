@@ -384,22 +384,515 @@ grammars = {
     %import common.C_COMMENT
     %ignore C_COMMENT
     ''',
-    "python_grammar": '''
-        %import python.single_input
-        %import python.file_input
-        %import python.eval_input
+    "python_grammar": """
+        start   : single_input 
+            | file_input 
+            | eval_input 
+        single_input    : simple_stmt 
+                        | compound_stmt 
+        file_input  : stmt 
+                    | file_input 
+                    | file_input stmt 
+        eval_input  : testlist 
+        decorator   : "@" dotted_name 
+                    | "@" dotted_name "(" arguments ")" 
+        decorators  : decorator 
+                    | decorators decorator 
+        decorated   : decorators classdef 
+                    | decorators funcdef 
+                    | decorators async_funcdef 
+        async_funcdef   : "async" funcdef 
+        funcdef : "def" name "(" ")" ":" suite 
+                | "def" name "(" parameters ")" ":" suite 
+                | "def" name "(" ")" ":" RARROW test suite 
+                | "def" name "(" parameters ")" ":" RARROW test suite 
+        parameters  : paramvalue paramlist 
+                    | paramvalue paramlist "," "/" paramlist 
+                    | paramvalue paramlist "," starparams 
+                    | paramvalue paramlist "," kwparams 
+                    | paramvalue paramlist "," "/" paramlist "," starparams 
+                    | paramvalue paramlist "," "/" paramlist "," kwparams 
+                    | starparams 
+                    | kwparams 
+        paramlist   : 
+                    | "," paramvalue paramlist 
+        starparams  : starparam poststarparams 
+                    | starguard poststarparams 
+        starparam   : "*" typedparam 
+                    | "*" 
+        starguard   : "*" 
+        poststarparams  : paramlist 
+                        | paramlist "," kwparams 
+        kwparams    : DOUBLESTAR typedparam 
+                    | DOUBLESTAR typedparam "," 
+        paramvalue  : typedparam 
+                    | typedparam "=" test 
+        typedparam  : name 
+                    | name ":" test 
+        lambdef : "lambda" ":" test 
+                | "lambda" lambda_params ":" test 
+        lambdef_nocond  : "lambda" ":" test_nocond 
+                        | "lambda" lambda_params ":" test_nocond 
+        lambda_params   : lambda_paramvalue lambda_paramlist 
+                        | lambda_paramvalue lambda_paramlist "," lambda_starparams 
+                        | lambda_paramvalue lambda_paramlist "," lambda_kwparams 
+        lambda_paramlist    : 
+                            | "," lambda_paramvalue lambda_paramlist 
+        lambda_paramvalue   : name 
+                            | name "=" test 
+        lambda_starparams   : "*" lambda_paramlist 
+                            | "*" name lambda_paramlist 
+                            | "*" lambda_paramlist "," lambda_kwparams 
+                            | "*" name lambda_paramlist "," lambda_kwparams 
+        lambda_kwparams : DOUBLESTAR name 
+                        | DOUBLESTAR name "," 
+        stmt    : simple_stmt 
+                | compound_stmt 
+        simple_stmt : small_stmt small_stmt_list 
+                    | small_stmt small_stmt_list ";" 
+        small_stmt_list : 
+                        | ";" small_stmt small_stmt_list 
+        small_stmt  : expr_stmt 
+                    | assign_stmt 
+                    | del_stmt 
+                    | pass_stmt 
+                    | flow_stmt 
+                    | import_stmt 
+                    | global_stmt 
+                    | nonlocal_stmt 
+                    | assert_stmt 
+        expr_stmt   : testlist_star_expr 
+        assign_stmt : annassign 
+                    | augassign 
+                    | assign 
+        annassign   : testlist_star_expr ":" test 
+                    | testlist_star_expr ":" test "=" test 
+        assign  : testlist_star_expr assign_follow_list 
+        assign_follow_list  : "=" yield_expr 
+                            | "=" testlist_star_expr 
+                            | "=" yield_expr assign_follow_list 
+                            | "=" testlist_star_expr assign_follow_list 
+        augassign   : testlist_star_expr augassign_op yield_expr 
+                    | testlist_star_expr augassign_op testlist 
+        augassign_op    : PLUSEQUAL 
+                        | MINUSEQUAL 
+                        | STAREQUAL 
+                        | ATEQUAL 
+                        | SLASHEQUAL 
+                        | PERCENTEQUAL 
+                        | AMPEREQUAL 
+                        | VBAREQUAL 
+                        | CIRCUMFLEXEQUAL 
+                        | LEFTSHIFTEQUAL 
+                        | RIGHTSHIFTEQUAL 
+                        | DOUBLESTAREQUAL 
+                        | DOUBLESLASHEQUAL 
+        testlist_star_expr  : test_or_star_expr 
+                            | test_or_star_expr "," testlist_star_expr 
+                            | test_or_star_expr "," 
+        del_stmt    : "del" exprlist 
+        pass_stmt   : "pass" 
+        flow_stmt   : break_stmt 
+                    | continue_stmt 
+                    | return_stmt 
+                    | raise_stmt 
+                    | yield_stmt 
+        break_stmt  : "break" 
+        continue_stmt   : "continue" 
+        return_stmt : "return" 
+                    | "return" testlist 
+        yield_stmt  : yield_expr 
+        raise_stmt  : "raise" 
+                    | "raise" test 
+                    | "raise" test "from" test 
+        import_stmt : import_name 
+                    | import_from 
+        import_name : "import" dotted_as_names 
+        import_from : "from" dotted_name "import" "*" 
+                    | "from" dotted_name "import" "(" import_as_names ")" 
+                    | "from" dotted_name "import" import_as_names 
+                    | "from" dots dotted_name "import" "*" 
+                    | "from" dots dotted_name "import" "(" import_as_names ")" 
+                    | "from" dots dotted_name "import" import_as_names 
+                    | "from" dots "import" "*" 
+                    | "from" dots "import" "(" import_as_names ")" 
+                    | "from" dots "import" import_as_names 
+        dots    : "." 
+                | "." dots 
+        import_as_name  : name 
+                        | name "as" name 
+        dotted_as_name  : dotted_name 
+                        | dotted_name "as" name 
+        import_as_names : import_as_name import_as_name_list 
+                        | import_as_name import_as_name_list "," 
+        import_as_name_list : 
+                            | "," import_as_name import_as_name_list 
+        dotted_as_names : dotted_as_name dotted_as_name_list 
+        dotted_as_name_list : 
+                            | "," dotted_as_name dotted_as_name_list 
+        dotted_name : name dotted_name_list 
+        dotted_name_list    : 
+                            | "." name dotted_name_list 
+        global_stmt : "global" name comma_name_list 
+        nonlocal_stmt   : "nonlocal" name comma_name_list 
+        comma_name_list : 
+                        | "," name comma_name_list 
+        assert_stmt : "assert" test 
+                    | "assert" test "," test 
+        compound_stmt   : if_stmt 
+                        | while_stmt 
+                        | for_stmt 
+                        | try_stmt 
+                        | match_stmt 
+                        | with_stmt 
+                        | funcdef 
+                        | classdef 
+                        | decorated 
+                        | async_stmt 
+        async_stmt  : "async" funcdef 
+                    | "async" with_stmt 
+                    | "async" for_stmt 
+        if_stmt : "if" test ":" suite elifs 
+                | "if" test ":" suite elifs "else" ":" suite 
+        elifs   : 
+                | "elif" test ":" suite elifs 
+        while_stmt  : "while" test ":" suite 
+                    | "while" test ":" suite "else" ":" suite 
+        for_stmt    : "for" exprlist "in" testlist ":" suite 
+                    | "for" exprlist "in" testlist ":" suite "else" ":" suite 
+        try_stmt    : "try" ":" suite except_clauses 
+                    | "try" ":" suite except_clauses "else" ":" suite 
+                    | "try" ":" suite except_clauses finally 
+                    | "try" ":" suite except_clauses "else" ":" suite finally 
+                    | "try" ":" suite finally 
+        finally : "finally" ":" suite 
+        except_clauses  : except_clause 
+                        | except_clause except_clauses 
+        except_clause   : "except" ":" suite 
+                        | "except" test ":" suite 
+                        | "except" test "as" name ":" suite 
+        with_stmt   : "with" with_items ":" suite 
+        with_items  : with_item with_item_list 
+        with_item_list  : 
+                        | "," with_item with_item_list 
+        with_item   : test 
+                    | test "as" name 
+        match_stmt  : "match" test ":" cases 
+        cases   : case 
+                | case cases 
+        case    : "case" pattern ":" suite 
+                | "case" pattern "if" test ":" suite 
+        pattern : sequence_item_pattern "," _sequence_pattern 
+                | as_pattern 
+        as_pattern  : or_pattern "as" name 
+        or_pattern  : closed_pattern closed_pattern_list 
+        closed_pattern_list : 
+                            | "|" closed_pattern closed_pattern_list 
+        closed_pattern  : literal_pattern 
+                        | NAME 
+                        | "_" 
+                        | attr_pattern 
+                        | "(" as_pattern ")" 
+                        | "[" _sequence_pattern "]" 
+                        | "(" ")" 
+                        | "(" sequence_item_pattern "," _sequence_pattern ")" 
+                        | "{" "}" 
+                        | "{" mapping_item_pattern mapping_item_list "}" 
+                        | "{" mapping_item_pattern mapping_item_list "," "}" 
+                        | "{" DOUBLESTAR NAME "}" 
+                        | "{" DOUBLESTAR NAME "," "}" 
+                        | "{" mapping_item_pattern mapping_item_list "," DOUBLESTAR NAME "}" 
+                        | "{" mapping_item_pattern mapping_item_list "," DOUBLESTAR NAME "," "}" 
+                        | class_pattern 
+        mapping_item_list   : 
+                            | "," mapping_item_pattern mapping_item_list 
+        literal_pattern : inner_literal_pattern 
+        inner_literal_pattern   : "None" 
+                                | "True" 
+                                | "False" 
+                                | STRING 
+                                | number 
+        attr_pattern    : NAME "." NAME dot_name_list 
+        dot_name_list   : 
+                        | "." NAME dot_name_list 
+        name_or_attr_pattern    : NAME dot_name_list 
+        mapping_item_pattern    : literal_pattern ":" as_pattern 
+                                | attr_pattern ":" as_pattern 
+        _sequence_pattern   : 
+                            | sequence_item_pattern sequence_item_list 
+                            | sequence_item_pattern sequence_item_list "," 
+        sequence_item_list  : 
+                            | "," sequence_item_pattern sequence_item_list 
+        sequence_item_pattern   : as_pattern 
+                                | "*" NAME 
+        class_pattern   : name_or_attr_pattern "(" ")" 
+                        | name_or_attr_pattern "(" arguments_pattern ")" 
+                        | name_or_attr_pattern "(" arguments_pattern "," ")" 
+        arguments_pattern   : pos_arg_pattern 
+                            | pos_arg_pattern "," keyws_arg_pattern 
+                            | keyws_arg_pattern 
+        pos_arg_pattern : as_pattern as_pattern_list 
+        as_pattern_list : 
+                        | "," as_pattern as_pattern_list 
+        keyws_arg_pattern   : keyw_arg_pattern keyw_arg_list 
+        keyw_arg_list   : 
+                        | "," keyw_arg_pattern keyw_arg_list 
+        keyw_arg_pattern    : NAME "=" as_pattern 
+        suite   : simple_stmt 
+                | stmt_list 
+        stmt_list   : stmt 
+                    | stmt stmt_list 
+        test    : or_test 
+                | or_test "if" or_test "else" test 
+                | lambdef 
+                | assign_expr 
+        assign_expr : name COLONEQUAL test 
+        test_nocond : or_test 
+                    | lambdef_nocond 
+        or_test : and_test or_and_test_list 
+        or_and_test_list    : 
+                            | "or" and_test or_and_test_list 
+        and_test    : not_test_ and_not_test_list 
+        and_not_test_list   : 
+                            | "and" not_test_ and_not_test_list 
+        not_test_   : "not" not_test_ 
+                    | comparison 
+        comparison  : expr comp_op_expr_list 
+        comp_op_expr_list   : 
+                            | comp_op expr comp_op_expr_list 
+        star_expr   : "*" expr 
+        expr    : or_expr 
+        or_expr : xor_expr bar_xor_list 
+        bar_xor_list    : 
+                        | "|" xor_expr bar_xor_list 
+        xor_expr    : and_expr xor_and_list 
+        xor_and_list    : 
+                        | "^" and_expr xor_and_list 
+        and_expr    : shift_expr and_shift_list 
+        and_shift_list  : 
+                        | "&" shift_expr and_shift_list 
+        shift_expr  : arith_expr shift_arith_list 
+        shift_arith_list    : 
+                            | _shift_op arith_expr shift_arith_list 
+        arith_expr  : term add_term_list 
+        add_term_list   : 
+                        | _add_op term add_term_list 
+        term    : factor mul_factor_list 
+        mul_factor_list : 
+                        | _mul_op factor mul_factor_list 
+        factor  : _unary_op factor 
+                | power 
+        _unary_op   : "+" 
+                    | "-" 
+                    | "~" 
+        _add_op : "+" 
+                | "-" 
+        _shift_op   : LEFTSHIFT 
+                    | RIGHTSHIFT 
+        _mul_op : "*" 
+                | "@" 
+                | "/" 
+                | "%" 
+                | DOUBLESLASH 
+        comp_op : "<" 
+                | ">" 
+                | EQEQUAL 
+                | GREATEREQUAL 
+                | LESSEQUAL 
+                | NOTEQUAL 
+                | "in" 
+                | "not" "in" 
+                | "is" 
+                | "is" "not" 
+        power   : await_expr 
+                | await_expr DOUBLESTAR factor 
+        await_expr  : atom_expr 
+                    | "await" atom_expr 
+        atom_expr   : atom_expr "(" ")" 
+                    | atom_expr "(" arguments ")" 
+                    | atom_expr "[" subscriptlist "]" 
+                    | atom_expr "." name 
+                    | atom 
+        atom    : "(" yield_expr ")" 
+                | "(" ")" 
+                | "(" _tuple_inner ")" 
+                | "(" test_or_star_expr comp_fors ")" 
+                | "(" test_or_star_expr comp_fors comp_if ")" 
+                | "[" "]" 
+                | "[" _exprlist "]" 
+                | "[" test_or_star_expr comp_fors "]" 
+                | "[" test_or_star_expr comp_fors comp_if "]" 
+                | "{" "}" 
+                | "{" _dict_exprlist "}" 
+                | "{" key_value comp_fors "}" 
+                | "{" key_value comp_fors comp_if "}" 
+                | "{" _exprlist "}" 
+                | "{" test comp_fors "}" 
+                | "{" test comp_fors comp_if "}" 
+                | name 
+                | number 
+                | string_concat 
+                | "(" test ")" 
+                | ELLIPSIS 
+                | "None" 
+                | "True" 
+                | "False" 
+        string_concat   : string 
+                        | string string_concat 
+        _tuple_inner    : test_or_star_expr "," 
+                        | test_or_star_expr test_star_list 
+                        | test_or_star_expr test_star_list "," 
+        test_star_list  : "," test_or_star_expr 
+                        | "," test_or_star_expr test_star_list 
+        test_or_star_expr   : test 
+                            | star_expr 
+        subscriptlist   : subscript 
+                        | subscript "," 
+                        | subscript sub_comma_list 
+                        | subscript sub_comma_list "," 
+        sub_comma_list  : "," subscript 
+                        | "," subscript sub_comma_list 
+        subscript   : test 
+                    | ":" 
+                    | test ":" 
+                    | test ":" test 
+                    | test ":" sliceop 
+                    | test ":" test sliceop 
+                    | ":" test 
+                    | ":" test sliceop 
+                    | ":" sliceop 
+        sliceop : ":" 
+                | ":" test 
+        exprlist    : expr 
+                    | star_expr 
+                    | expr "," 
+                    | expr expr_star_expr_list 
+                    | expr expr_star_expr_list "," 
+                    | star_expr "," 
+                    | star_expr expr_star_expr_list 
+                    | star_expr expr_star_expr_list "," 
+        expr_star_expr_list : "," expr 
+                            | "," star_expr 
+                            | "," expr expr_star_expr_list 
+                            | "," star_expr expr_star_expr_list 
+        testlist    : test 
+                    | testlist_tuple 
+        testlist_tuple  : test "," 
+                        | test comma_test_list 
+                        | test comma_test_list "," 
+        comma_test_list : "," test 
+                        | "," test comma_test_list 
+        _dict_exprlist  : key_value key_value_expr_list 
+                        | key_value key_value_expr_list "," 
+                        | DOUBLESTAR expr key_value_expr_list 
+                        | DOUBLESTAR expr key_value_expr_list "," 
+        key_value_expr_list : 
+                            | "," key_value key_value_expr_list 
+                            | "," DOUBLESTAR expr key_value_expr_list 
+        key_value   : test ":" test 
+        _exprlist   : test_or_star_expr test_star_zero_list 
+                    | test_or_star_expr test_star_zero_list "," 
+        test_star_zero_list : 
+                            | "," test_or_star_expr test_star_zero_list 
+        classdef    : "class" name ":" suite 
+                    | "class" name "(" ")" ":" suite 
+                    | "class" name "(" arguments ")" ":" suite 
+        arguments   : argvalue argvalue_list 
+                    | argvalue argvalue_list "," 
+                    | argvalue argvalue_list "," starargs 
+                    | argvalue argvalue_list "," kwargs 
+                    | starargs 
+                    | kwargs 
+                    | test comp_fors 
+                    | test comp_fors comp_if 
+        argvalue_list   : 
+                        | "," argvalue argvalue_list 
+        starargs    : stararg stararg_list argvalue_list 
+                    | stararg stararg_list argvalue_list "," kwargs 
+        stararg_list    : 
+                        | "," stararg stararg_list 
+        stararg : "*" test 
+        kwargs  : DOUBLESTAR test argvalue_list 
+        argvalue    : test 
+                    | test "=" test 
+        comp_fors   : comp_for 
+                    | comp_for comp_fors 
+        comp_for    : "for" exprlist "in" or_test 
+                    | "async" "for" exprlist "in" or_test 
+        comp_if : "if" test_nocond 
+        yield_expr  : "yield" 
+                    | "yield" testlist 
+                    | "yield" "from" test 
+        number  : DEC_NUMBER 
+                | HEX_NUMBER 
+                | BIN_NUMBER 
+                | OCT_NUMBER 
+                | FLOAT_NUMBER 
+                | IMAG_NUMBER 
+        string  : STRING 
+                | LONG_STRING 
+        name    : NAME 
+                | "match" 
+                | "case" 
+                | "type" 
+                | "_" 
 
-        start : single_input
-              | file_input
-              | eval_input
-    '''
+
+
+        # start of tokens
+
+		NAME: /[^\W\d]\w*/
+
+        DEC_NUMBER:   /([1-9]([_]?[0-9])*)|[0]+([_]?[0])*/
+        HEX_NUMBER.2: /0[xX]([_]?([0-9a-fA-F]))+/
+        OCT_NUMBER.2: /0[oO]([_]?[0-7])+/
+        BIN_NUMBER.2: /0[bB]([_]?[01])+/
+
+        FLOAT_NUMBER.2: /([0-9]([_]?[0-9])*[eE][+-][0-9]([_]?[0-9])*)|(((\.[0-9]([_]?[0-9])*)|([0-9]([_]?[0-9])*\.[0-9]([_]?[0-9])*))([eE][+-][0-9]([_]?[0-9])*)?)/
+        IMAG_NUMBER.2: /(([0-9]([_]?[0-9])*)|(([0-9]([_]?[0-9])*[eE][+-][0-9]([_]?[0-9])*)|(((\.[0-9]([_]?[0-9])*)|([0-9]([_]?[0-9])*\.[0-9]([_]?[0-9])*))([eE][+-][0-9]([_]?[0-9])*)?)))[jJ]/
+
+        %import python.STRING -> STRING
+        %import python.LONG_STRING -> LONG_STRING
+
+        %import common.SH_COMMENT
+        %ignore SH_COMMENT
+
+        WHITE_SPACE.10: /[ \t\f\t\r]/
+        %ignore WHITE_SPACE
+
+        EQEQUAL: "=="
+		NOTEQUAL: "!="
+		LESSEQUAL: "<="
+		GREATEREQUAL: ">="
+		LEFTSHIFT.4: "<<"
+		RIGHTSHIFT.4: ">>"
+		DOUBLESTAR: "**"
+		PLUSEQUAL: "+="
+		MINUSEQUAL: "-="
+		STAREQUAL: "*="
+		SLASHEQUAL: "/="
+		PERCENTEQUAL: "%="
+		AMPEREQUAL: "&="
+		VBAREQUAL: "|="
+		CIRCUMFLEXEQUAL: "^=" 
+		LEFTSHIFTEQUAL.5: "<<="
+		RIGHTSHIFTEQUAL.5: ">>="
+		DOUBLESTAREQUAL: "**="
+		DOUBLESLASH: "//"
+		DOUBLESLASHEQUAL.5: "//=" 
+		ATEQUAL: "@="
+		RARROW: "->"
+		ELLIPSIS: "..."
+		COLONEQUAL: ":="
+    """
 }
 
 # @profile
 def main(input_string, grammar, args):    
     parser = None
 
-    start_time = time.time()
+    with open('gfg.py', 'r') as file:
+        input_string = file.read()
 
     if args.cyk:
         parser = Lark(grammar, parser='cyk', ordered_sets=False)
@@ -407,6 +900,7 @@ def main(input_string, grammar, args):
         print("Earley")
         parser = Lark(grammar, parser='earley', ambiguity="forest", lexer='basic')
 
+    start_time = time.time()
     res = parser.parse(input_string)
     print(res)
 

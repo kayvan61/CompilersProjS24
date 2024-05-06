@@ -1034,57 +1034,61 @@ def round_up_to_multiple_of_4(x):
     return int(math.ceil(x / 4.0)) * 4
 
 
+reversed_reserved = {value: key for key, value in reserved.items()}
+
 def print_prod_rhs(prod):
     for term in prod:
         if len(term) == 1:
             print(f"\"{term}\" ", end="")
+        elif term in reversed_reserved:
+            print(f"\"{reversed_reserved[term]}\" ", end="")
         else:
             print(f"{term} ", end="")
     print()
 
 if __name__ == "__main__":
     # Build the lexer and try it out
-    l = PythonLexer()
-    l.build()           # Build the lexer
-    test =  '''
-            == != ... >= # comment def asdf 
+    # l = PythonLexer()
+    # l.build()           # Build the lexer
+    # test =  '''
+    #         == != ... >= # comment def asdf 
              
-               >>= def 
-               100 00 0xaFd2301 0b1010_1_01 0o12571521
-               123401243e-123 .0123 0.0123 123143.0 12.1230E+12
-               123401243e-123j .0123J 123j 123143.0j 12.1230E+12J
-               f"testing {test} one two three" 'hello \t world'
+    #            >>= def 
+    #            100 00 0xaFd2301 0b1010_1_01 0o12571521
+    #            123401243e-123 .0123 0.0123 123143.0 12.1230E+12
+    #            123401243e-123j .0123J 123j 123143.0j 12.1230E+12J
+    #            f"testing {test} one two three" 'hello \t world'
 
-                f"""
-                test
-                """
+    #             f"""
+    #             test
+    #             """
 
-                . ...
-            '''
-    l.input(test)     # Test it
+    #             . ...
+    #         '''
+    # l.input(test)     # Test it
 
-    while True:
-        tok = l.token()
-        if not tok:
-            print("-----------")
-            break
-        print(tok.type, tok.value)
+    # while True:
+    #     tok = l.token()
+    #     if not tok:
+    #         print("-----------")
+    #         break
+    #     print(tok.type, tok.value)
 
     # print(l.tokens)
 
     # Convert GFG productions to Lark productions
-    # for non_terminal, prods in cLangProductions.items():
-    #     name_len = (len(non_terminal) + 1)
-    #     num_spaces = round_up_to_multiple_of_4(name_len)
+    for non_terminal, prods in pythonProductions.items():
+        name_len = (len(non_terminal) + 1)
+        num_spaces = round_up_to_multiple_of_4(name_len)
 
-    #     diff_space = ' ' * (num_spaces - name_len)
-    #     spaces = ' ' * num_spaces
+        diff_space = ' ' * (num_spaces - name_len)
+        spaces = ' ' * num_spaces
 
-    #     print(f"{non_terminal}{diff_space} : ", end = "")
+        print(f"{non_terminal}{diff_space} : ", end = "")
 
-    #     print_prod_rhs(prods[0])
+        print_prod_rhs(prods[0])
 
-    #     for i in range(1, len(prods)):
-    #         prod = prods[i]
-    #         print(f"{spaces}| ", end="")
-    #         print_prod_rhs(prod)
+        for i in range(1, len(prods)):
+            prod = prods[i]
+            print(f"{spaces}| ", end="")
+            print_prod_rhs(prod)
