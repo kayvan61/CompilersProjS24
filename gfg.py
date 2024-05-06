@@ -1,5 +1,6 @@
 from expr_lexer import ExprLexer
 from ab_lexer import ABLexer
+from pythonLexer import PythonLexer, pythonProductions
 from cLexer import CLangLexer, cLangProductions
 from sppf import Sppf
 from old_sppf import Sppf_Old
@@ -161,7 +162,7 @@ class GFG:
                         end_node = self.nodes[called_prod_end]
                         edge_label = ""
                     else:
-                        print(f"\t\TODO RAISE ERROR unrecognized term: {term}") 
+                        print(f"\t\TODO RAISE ERROR unrecognized term: {term} in {long_name}") 
                         return
                     
                     # update prev_node and prefix_label
@@ -1122,7 +1123,8 @@ def print_tree(node, level=0):
 if __name__ == "__main__":
     #test_gfg = GFG(ExprLexer())
     # test_gfg = GFG(ABLexer())
-    test_gfg = GFG(CLangLexer())
+    # test_gfg = GFG(CLangLexer())
+    test_gfg = GFG(PythonLexer())
 
     # productions = {
     #     "S": [["A", "b"], ["b", "A"]],
@@ -1173,7 +1175,8 @@ if __name__ == "__main__":
     #           ["b"]]
     # }
 
-    productions = cLangProductions
+    # productions = cLangProductions
+    productions = pythonProductions
     
     test_gfg.build_gfg(productions, "S")
 
@@ -1182,17 +1185,15 @@ if __name__ == "__main__":
     #     test_gfg.graph.write_png("output.png")
 
     data =  '''
-int main() {
-    return 0;
-}
+            print(5)
             '''
     print(f"is {data} in language: {test_gfg.recognize_string(data)}")
     # print(f"{data} parse tree:")
     # print_tree(test_gfg.parse_string(data))
 
 
-    sppf = test_gfg.parse_top_down(data)
-    sppf.graph.write_png("sppf.png")
-    f_sppf = test_gfg.sppf_forward_inference(data)
-    # f_sppf = test_gfg.sppf_forward(data)
-    f_sppf.graph.write_png("sppf_forward.png")
+    # sppf = test_gfg.parse_top_down(data)
+    # sppf.graph.write_png("sppf.png")
+    # f_sppf = test_gfg.sppf_forward_inference(data)
+    # # f_sppf = test_gfg.sppf_forward(data)
+    # f_sppf.graph.write_png("sppf_forward.png")

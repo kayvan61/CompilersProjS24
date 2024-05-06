@@ -47,11 +47,11 @@ pythonProductions = {
 
     "parameters": [
         ['paramvalue', 'paramlist'],
-        ['paramvalue', 'paramlist', ',' '/', 'paramlist'],
+        ['paramvalue', 'paramlist', ',', '/', 'paramlist'],
         ['paramvalue', 'paramlist', ',', 'starparams'],
         ['paramvalue', 'paramlist', ',', 'kwparams'],
-        ['paramvalue', 'paramlist', ',' '/', 'paramlist', ',', 'starparams'],
-        ['paramvalue', 'paramlist', ',' '/', 'paramlist', ',', 'kwparams'],
+        ['paramvalue', 'paramlist', ',', '/', 'paramlist', ',', 'starparams'],
+        ['paramvalue', 'paramlist', ',', '/', 'paramlist', ',', 'kwparams'],
         ['starparams'],
         ['kwparams']
     ],
@@ -68,13 +68,16 @@ pythonProductions = {
         ['*', 'typedparam'],
         ['*'],
     ],
+    "starguard": [
+        ['*'],
+    ],
     "poststarparams": [
         ['paramlist'],
         ['paramlist', ',', 'kwparams'],
     ],
     "kwparams": [
-        ['**', 'typedparam'],
-        ['**', 'typedparam', ','],
+        ['DOUBLESTAR', 'typedparam'],
+        ['DOUBLESTAR', 'typedparam', ','],
     ],
 
     "paramvalue": [
@@ -114,8 +117,8 @@ pythonProductions = {
         ['*', 'name', 'lambda_paramlist', ',', 'lambda_kwparams'],
     ],
     "lambda_kwparams": [
-        ['**', 'name'],
-        ['**', 'name', ','],
+        ['DOUBLESTAR', 'name'],
+        ['DOUBLESTAR', 'name', ','],
     ],
 
     "stmt": [
@@ -247,7 +250,7 @@ pythonProductions = {
     ],
     "dotted_as_name": [
         ['dotted_name'],
-        ['dotted_name', 'as', 'name'],
+        ['dotted_name', 'AS', 'name'],
     ],
     "import_as_names": [
         ['import_as_name', 'import_as_name_list'],
@@ -316,8 +319,8 @@ pythonProductions = {
         ['WHILE', 'test', ':', 'suite', 'ELSE', ':', 'suite'],
     ],
     "for_stmt": [
-        ['for', 'exprlist', 'IN', 'testlist', ':', 'suite'],
-        ['for', 'exprlist', 'IN', 'testlist', ':', 'suite', 'ELSE', ':', 'suite'],
+        ['FOR', 'exprlist', 'IN', 'testlist', ':', 'suite'],
+        ['FOR', 'exprlist', 'IN', 'testlist', ':', 'suite', 'ELSE', ':', 'suite'],
     ],
     "try_stmt": [
         ['TRY', ':', 'suite', 'except_clauses'],
@@ -393,10 +396,10 @@ pythonProductions = {
         ['{', '}'],
         ['{', 'mapping_item_pattern', 'mapping_item_list', '}' ],
         ['{', 'mapping_item_pattern', 'mapping_item_list', ',', '}' ],
-        ['{', '**', 'NAME', '}'],
-        ['{', '**', 'NAME', ',', '}'],
-        ['{', 'mapping_item_pattern', 'mapping_item_list', ',', '**', 'NAME', '}'],
-        ['{', 'mapping_item_pattern', 'mapping_item_list', ',', '**', 'NAME', ',', '}'],
+        ['{', 'DOUBLESTAR', 'NAME', '}'],
+        ['{', 'DOUBLESTAR', 'NAME', ',', '}'],
+        ['{', 'mapping_item_pattern', 'mapping_item_list', ',', 'DOUBLESTAR', 'NAME', '}'],
+        ['{', 'mapping_item_pattern', 'mapping_item_list', ',', 'DOUBLESTAR', 'NAME', ',', '}'],
         ['class_pattern'],
     ],
     "mapping_item_list": [
@@ -455,7 +458,7 @@ pythonProductions = {
         ['pos_arg_pattern', ',', 'keyws_arg_pattern'],
         ['keyws_arg_pattern'],
     ],
-    "post_arg_pattern": [
+    "pos_arg_pattern": [
         ['as_pattern', 'as_pattern_list'],
     ],
     "as_pattern_list": [
@@ -472,6 +475,370 @@ pythonProductions = {
     "keyw_arg_pattern": [
         ['NAME', '=', 'as_pattern'],
     ],
+
+    "suite": [
+        ['simple_stmt'],
+        ['NEWLINE', 'stmt_list'], # TODO MISSING INDENT DEDENT
+    ],
+    "stmt_list": [
+        ['stmt'],
+        ['stmt', 'stmt_list']
+    ],
+
+    "test": [
+        ['or_test'],
+        ['or_test', 'IF', 'or_test', 'ELSE', 'test'],
+        ['lambdef'],
+        ['assign_expr'],
+    ],
+    "assign_expr": [
+        ['name', 'COLONEQUAL', 'test'],
+    ],
+    "test_nocond": [
+        ['or_test'],
+        ['lambdef_nocond'],
+    ],
+
+    "or_test": [
+        ['and_test', 'or_and_test_list'],
+    ],
+    "or_and_test_list": [
+        [],
+        ['OR', 'and_test', 'or_and_test_list'],
+    ],
+    "and_test": [
+        ['not_test_', 'and_not_test_list'],
+    ],
+    "and_not_test_list": [
+        [],
+        ['AND', 'not_test_', 'and_not_test_list'],
+    ],
+    "not_test_": [
+        ['NOT', 'not_test_'],
+        ['comparison'],
+    ],
+    "comparison": [
+        ['expr', 'comp_op_expr_list'],
+    ],
+    "comp_op_expr_list": [
+        [],
+        ['comp_op', 'expr', 'comp_op_expr_list'],
+    ],
+    "star_expr": [
+        ['*', 'expr'],
+    ],
+
+    "expr": [
+        ['or_expr'],
+    ],
+    "or_expr": [
+        ['xor_expr', 'bar_xor_list'],
+    ],
+    "bar_xor_list": [
+        [],
+        ['|', 'xor_expr', 'bar_xor_list'],
+    ],
+
+    "xor_expr": [
+        ['and_expr', 'xor_and_list'],
+    ],
+    "xor_and_list": [
+        [],
+        ['^', 'and_expr', 'xor_and_list'],
+    ],
+
+    "and_expr": [
+        ['shift_expr', 'and_shift_list'],
+    ],
+    "and_shift_list": [
+        [],
+        ['&', 'shift_expr', 'and_shift_list'],
+    ],
+
+    "shift_expr": [
+        ['arith_expr', 'shift_arith_list'],
+    ],
+    "shift_arith_list": [
+        [],
+        ['_shift_op', 'arith_expr', 'shift_arith_list'],
+    ],
+
+    "arith_expr": [
+        ['term', 'add_term_list'],
+    ],
+    "add_term_list": [
+        [],
+        ['_add_op', 'term', 'add_term_list'],
+    ],
+
+    "term": [
+        ['factor', 'mul_factor_list'],
+    ],
+    "mul_factor_list": [
+        [],
+        ['_mul_op', 'factor', 'mul_factor_list'],
+    ],
+
+    "factor": [
+        ['_unary_op', 'factor'],
+        ['power'],
+    ],
+
+    "_unary_op": [
+        ['+'],
+        ['-'],
+        ['~'],
+    ],
+    "_add_op": [
+        ['+'],
+        ['-'],
+    ],
+    "_shift_op": [
+        ['LEFTSHIFT'],
+        ['RIGHTSHIFT'],
+    ],
+    "_mul_op": [
+        ['*'],
+        ['@'],
+        ['/'],
+        ['%'],
+        ['DOUBLESLASH']
+    ],
+    "comp_op": [
+        ['<'],
+        ['>'],
+        ['EQEQUAL'],
+        ['GREATEREQUAL'],
+        ['LESSEQUAL'],
+        ['NOTEQUAL'],
+        ['IN'],
+        ['NOT', 'IN'],
+        ['IS'],
+        ['IS', 'NOT'],
+    ],
+
+    "power": [
+        ['await_expr'],
+        ['await_expr', 'DOUBLESTAR', 'factor']
+    ],
+    "await_expr": [
+        ['atom_expr'],
+        ['AWAIT', 'atom_expr'],
+    ],
+
+    "atom_expr": [
+        ['atom_expr', '(', ')'],
+        ['atom_expr', '(', 'arguments', ')'],
+        ['atom_expr', '[', 'subscriptlist', ']'],
+        ['atom_expr', '.', 'name'],
+        ['atom'],
+    ],
+
+    "atom": [
+        ['(', 'yield_expr', ')'],
+        ['(', ')'],
+        ['(', '_tuple_inner', ')'],
+        ['(', 'test_or_star_expr', 'comp_fors', ')'],
+        ['(', 'test_or_star_expr', 'comp_fors', 'comp_if', ')'],
+        ['[', ']'],
+        ['[', '_exprlist', ']'],
+        ['[', 'test_or_star_expr', 'comp_fors', ']'],
+        ['[', 'test_or_star_expr', 'comp_fors', 'comp_if', ']'],
+        ['{', '}'],
+        ['{', '_dict_exprlist', '}'],
+        ['{', 'key_value', 'comp_fors', '}'],
+        ['{', 'key_value', 'comp_fors', 'comp_if', '}'],
+        ['{', '_exprlist', '}'],
+        ['{', 'test', 'comp_fors', '}'],
+        ['{', 'test', 'comp_fors', 'comp_if', '}'],
+        ['name'],
+        ['number'],
+        ['string_concat'],
+        ['(', 'test', ')'],
+        ['ELLIPSIS'],
+        ['NONE'],
+        ['TRUE'],
+        ['FALSE'],
+    ],
+
+    "string_concat": [
+        ['string'],
+        ['string', 'string_concat'],
+    ],
+
+    "_tuple_inner": [
+        ['test_or_star_expr', ','],
+        ['test_or_star_expr', 'test_star_list'],
+        ['test_or_star_expr', 'test_star_list', ','],
+    ],
+    "test_star_list": [
+        [',', 'test_or_star_expr'],
+        [',', 'test_or_star_expr', 'test_star_list'],
+    ],
+    "test_or_star_expr": [
+        ['test'],
+        ['star_expr'],
+    ],
+
+    "subscriptlist": [
+        ['subscript'],
+        ['subscript', ','],
+        ['subscript', 'sub_comma_list'],
+        ['subscript', 'sub_comma_list', ','],
+    ],
+    "sub_comma_list": [
+        [',', 'subscript'],
+        [',', 'subscript', 'sub_comma_list']
+    ],
+    "subscript": [
+        ['test'],
+        [':'],
+        ['test', ':'],
+        ['test', ':', 'test'],
+        ['test', ':', 'sliceop'],
+        ['test', ':', 'test', 'sliceop'],
+        [':', 'test'],
+        [':', 'test', 'sliceop'],
+        [':', 'sliceop'],
+    ],
+    "sliceop": [
+        [':'],
+        [':', 'test'],
+    ],
+    "exprlist": [
+        ['expr'],
+        ['star_expr'],
+        ['expr', ','],
+        ['expr', 'expr_star_expr_list'],
+        ['expr', 'expr_star_expr_list', ','],
+        ['star_expr', ','],
+        ['star_expr', 'expr_star_expr_list'],
+        ['star_expr', 'expr_star_expr_list', ','],
+    ],
+    "expr_star_expr_list": [
+        [',', 'expr'],
+        [',', 'star_expr'],
+        [',', 'expr', 'expr_star_expr_list'],
+        [',', 'star_expr', 'expr_star_expr_list'],
+    ],
+    "testlist": [
+        ['test'],
+        ['testlist_tuple'],
+    ],
+    "testlist_tuple": [
+        ['test', ','],
+        ['test', 'comma_test_list'],
+        ['test', 'comma_test_list', ','],
+    ],
+    "comma_test_list": [
+        [',', 'test'],
+        [',', 'test', 'comma_test_list'],
+    ],
+    "_dict_exprlist": [
+        ['key_value', 'key_value_expr_list'],
+        ['key_value', 'key_value_expr_list', ','],
+        ['DOUBLESTAR', 'expr', 'key_value_expr_list'],
+        ['DOUBLESTAR', 'expr', 'key_value_expr_list', ','],
+    ],
+    "key_value_expr_list": [
+        [],
+        [',', 'key_value', 'key_value_expr_list'],
+        [',', 'DOUBLESTAR', 'expr', 'key_value_expr_list'],
+    ],
+
+    "key_value": [
+        ['test', ':', 'test'],
+    ],
+
+    "_exprlist": [
+        ['test_or_star_expr', 'test_star_zero_list'],
+        ['test_or_star_expr', 'test_star_zero_list', ','],
+    ],
+    "test_star_zero_list": [
+        [],
+        [',', 'test_or_star_expr', 'test_star_zero_list'],
+    ],
+
+    "classdef": [
+        ['CLASS', 'name', ':', 'suite'],
+        ['CLASS', 'name', '(', ')', ':', 'suite'],
+        ['CLASS', 'name', '(', 'arguments', ')', ':', 'suite'],
+    ],
+
+    "arguments": [
+        ['argvalue', 'argvalue_list'],
+        ['argvalue', 'argvalue_list', ','],
+        ['argvalue', 'argvalue_list', ',', 'starargs'],
+        ['argvalue', 'argvalue_list', ',', 'kwargs'],
+        ['starargs'],
+        ['kwargs'],
+        ['test', 'comp_fors'],
+        ['test', 'comp_fors', 'comp_if'],
+    ],
+    "argvalue_list": [
+        [],
+        [',', 'argvalue', 'argvalue_list'],
+    ],
+
+    "starargs": [
+        ['stararg', 'stararg_list', 'argvalue_list'],
+        ['stararg', 'stararg_list', 'argvalue_list', ',', 'kwargs'],
+    ],
+    "stararg_list": [
+        [],
+        [',', 'stararg', 'stararg_list'],
+    ],
+    "stararg": [
+        ['*', 'test'],
+    ],
+    "kwargs": [
+        ['DOUBLESTAR', 'test', 'argvalue_list'],
+    ],
+    "argvalue": [
+        ['test'],
+        ['test', '=', 'test'],
+    ],
+
+    "comp_fors": [
+        ['comp_for'],
+        ['comp_for', 'comp_fors'],
+    ],
+    "comp_for": [
+        ['FOR', 'exprlist', 'IN', 'or_test'],
+        ['ASYNC', 'FOR', 'exprlist', 'IN', 'or_test'],
+    ],
+    "comp_if": [
+        ['IF', 'test_nocond'],
+    ],
+
+    "yield_expr": [
+        ['YIELD'],
+        ['YIELD', 'testlist'],
+        ['YIELD', 'FROM', 'test'],
+    ],
+
+    "number": [
+        ['DEC_NUMBER'],
+        ['HEX_NUMBER'],
+        ['BIN_NUMBER'],
+        ['OCT_NUMBER'],
+        ['FLOAT_NUMBER'],
+        ['IMAG_NUMBER'],
+    ],
+    "string": [
+        ['STRING'],
+        ['LONG_STRING'],
+    ],
+
+    "name": [
+        ['NAME'],
+        ['MATCH'],
+        ['CASE'],
+        ['TYPE'],
+    ],
+
+
+    # comprehension{comp_result}: comp_result comp_fors [comp_if]
 }
 
 reserved = {
